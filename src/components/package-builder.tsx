@@ -9,13 +9,15 @@ import { Button } from "./ui/button";
 import { useCart, cartTotals } from "@/store/cart";
 import { CATEGORIES, categoryByKey } from "@/lib/constants";
 import { formatPKR, prettyDate, toDateKey } from "@/lib/utils";
-import { startCheckoutAction } from "@/app/actions";
+import { useDemo, useCustomerId } from "@/lib/demo/store";
+import { startCheckout, SlotConflictError } from "@/lib/demo/engine";
 
 export function PackageBuilder({ policy }: { policy: ReactNode }) {
   const router = useRouter();
   const cart = useCart();
   const [mounted, setMounted] = useState(false);
   const [pending, startTransition] = useTransition();
+  const customerId = useCustomerId();
   const [error, setError] = useState<{ msg: string; conflicts?: string[] } | null>(null);
   useEffect(() => setMounted(true), []);
 
@@ -29,18 +31,19 @@ export function PackageBuilder({ policy }: { policy: ReactNode }) {
 
   const checkout = () => {
     setError(null);
-    startTransition(async () => {
+    startTransition(() => {
       const lines = [
         ...(cart.hall ? [{ type: "hall" as const, refId: cart.hall.hallId, packageId: cart.hall.packageId }] : []),
         ...cart.vendors.map((v) => ({ type: "vendor" as const, refId: v.vendorId, packageId: v.packageId })),
       ];
-      const res = await startCheckoutAction({ eventName: cart.eventName, eventDate: cart.eventDate, guests: cart.hall ? cart.guests : 0, lines });
-      if (!res.ok) {
-        setError({ msg: res.error, conflicts: res.conflicts });
-        return;
+      try {
+        const { db, result } = startCheckout(useDemo.getState().db, { customerId, eventName: cart.eventName, eventDate: cart.eventDate, guests: cart.hall ? cart.guests : 0, lines });
+        useDemo.setState({ db });
+        cart.setPending(result);
+        router.push(`/checkout?b=${result.bookingId}`);
+      } catch (e) {
+        setError(e instanceof SlotConflictError ? { msg: e.message, conflicts: e.labels } : { msg: (e as Error).message });
       }
-      cart.setPending(res.data);
-      router.push(`/checkout?b=${res.data.bookingId}`);
     });
   };
 

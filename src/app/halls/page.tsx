@@ -1,38 +1,29 @@
+"use client";
 import Link from "next/link";
-import type { Prisma } from "@prisma/client";
+import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
-import { prisma } from "@/lib/db";
 import { CITIES, HALL_TYPES } from "@/lib/constants";
-import { reviewCounts, toHallView, unavailableIdsOn } from "@/lib/queries";
+import { useDemo } from "@/lib/demo/store";
+import { approvedHalls, hallCard } from "@/lib/demo/selectors";
+import { unavailableIdsOn } from "@/lib/demo/engine";
 import { HallCard } from "@/components/hall-card";
 import { Reveal } from "@/components/motion/reveal";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { Button } from "@/components/ui/button";
 import { prettyDate, toDateKey } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-export const metadata = { title: "Wedding halls" };
+export default function HallsPage() {
+  const sp = useSearchParams();
+  const get = (k: string) => sp.get(k) ?? "";
+  const city = get("city"), date = get("date"), guests = get("guests"), type = get("type"), min = get("min"), max = get("max");
+  const sort = get("sort") || "rating";
+  const db = useDemo((s) => s.db);
 
-type SP = { city?: string; date?: string; guests?: string; type?: string; min?: string; max?: string; sort?: string };
-
-export default async function HallsPage({ searchParams }: { searchParams: SP }) {
-  const { city = "", date = "", guests = "", type = "", min = "", max = "", sort = "rating" } = searchParams;
-
-  const where: Prisma.HallWhereInput = { approved: "approved" };
-  if (city) where.city = city;
-  if (type) where.type = type;
-  if (guests) where.capacityMax = { gte: Number(guests) };
-  if (min || max) where.pricePerHead = { ...(min ? { gte: Number(min) } : {}), ...(max ? { lte: Number(max) } : {}) };
-
-  const orderBy: Prisma.HallOrderByWithRelationInput =
-    sort === "price_asc" ? { pricePerHead: "asc" } : sort === "price_desc" ? { pricePerHead: "desc" } : sort === "capacity" ? { capacityMax: "desc" } : { rating: "desc" };
-
-  const [halls, counts, unavailable] = await Promise.all([
-    prisma.hall.findMany({ where, orderBy }),
-    reviewCounts("hall"),
-    date ? unavailableIdsOn(date) : Promise.resolve(null),
-  ]);
-
+  const halls = approvedHalls(db)
+    .filter((h) => (!city || h.city === city) && (!type || h.type === type) && (!guests || h.capacityMax >= Number(guests)))
+    .filter((h) => (!min || h.pricePerHead >= Number(min)) && (!max || h.pricePerHead <= Number(max)))
+    .sort((a, b) => (sort === "price_asc" ? a.pricePerHead - b.pricePerHead : sort === "price_desc" ? b.pricePerHead - a.pricePerHead : sort === "capacity" ? b.capacityMax - a.capacityMax : b.rating - a.rating));
+  const unavailable = date ? unavailableIdsOn(db, date) : null;
   const visible = unavailable ? halls.filter((h) => !unavailable.halls.has(h.id)) : halls;
   const hiddenCount = halls.length - visible.length;
   const tomorrow = new Date();
@@ -52,7 +43,7 @@ export default async function HallsPage({ searchParams }: { searchParams: SP }) 
       <div className="container grid gap-8 py-10 lg:grid-cols-[280px_1fr]">
         {/* filters */}
         <aside>
-          <form className="sticky top-24 space-y-4 rounded-[6px] border border-line bg-white p-5" method="get">
+          <form key={sp.toString()} className="sticky top-24 space-y-4 rounded-[6px] border border-line bg-white p-5" method="get">
             <p className="flex items-center gap-2 font-display text-lg text-maroon">
               <SlidersHorizontal className="h-4 w-4 text-gold" /> Filters
             </p>
@@ -128,7 +119,7 @@ export default async function HallsPage({ searchParams }: { searchParams: SP }) 
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {visible.map((h, i) => (
                 <Reveal key={h.id} delay={(i % 3) * 0.06}>
-                  <HallCard hall={toHallView(h, counts.get(h.id) ?? 0)} availableOn={date || null} dateQuery={date} />
+                  <HallCard hall={hallCard(db, h)} availableOn={date || null} dateQuery={date} />
                 </Reveal>
               ))}
             </div>

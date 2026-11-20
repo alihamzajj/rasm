@@ -1,19 +1,17 @@
+"use client";
 import { Percent, Landmark, Wallet, TrendingUp } from "lucide-react";
-import { prisma } from "@/lib/db";
-import { getCommission } from "@/lib/queries";
-import { setCommissionAction } from "@/app/actions";
+import { useDemo } from "@/lib/demo/store";
+import { setCommission } from "@/lib/demo/engine";
 import { Stat } from "@/components/dashboard/stat";
 import { Button } from "@/components/ui/button";
 import { formatPKR } from "@/lib/utils";
 
-export const metadata = { title: "Commission & revenue" };
-
-export default async function AdminSettings() {
-  const [commission, bookings, payments] = await Promise.all([
-    getCommission(),
-    prisma.booking.findMany({ where: { status: { in: ["confirmed", "completed"] } }, select: { totalAmount: true, createdAt: true, status: true } }),
-    prisma.payment.findMany({ select: { amount: true, status: true } }),
-  ]);
+export default function AdminSettings() {
+  const db = useDemo((s) => s.db);
+  const apply = useDemo((s) => s.apply);
+  const commission = db.commissionPercent;
+  const bookings = db.bookings.filter((b) => b.status === "confirmed" || b.status === "completed").map((b) => ({ ...b, createdAt: new Date(b.createdAt) }));
+  const payments = db.payments;
   const gmv = bookings.reduce((a, b) => a + b.totalAmount, 0);
   const collected = payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
   const refunded = payments.filter((p) => p.status === "refunded").reduce((a, p) => a + p.amount, 0);
@@ -61,7 +59,14 @@ export default async function AdminSettings() {
           </div>
         </div>
 
-        <form action={setCommissionAction} className="h-fit rounded-[6px] border border-gold/50 bg-cream p-5">
+        <form
+          key={commission}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const v = Number(new FormData(e.currentTarget).get("commission"));
+            apply((d) => setCommission(d, v));
+          }}
+          className="h-fit rounded-[6px] border border-gold/50 bg-cream p-5">
           <h2 className="text-xl">Commission setting</h2>
           <p className="mt-1 text-sm text-ink-muted">Percentage Rasm keeps from each booking. It is taken from the advance; partners see their earnings after commission.</p>
           <label className="label mt-4" htmlFor="commission">Commission (%)</label>

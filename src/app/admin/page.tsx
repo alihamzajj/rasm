@@ -1,24 +1,25 @@
+"use client";
 import Image from "next/image";
 import { Check, X, MapPin } from "lucide-react";
-import { prisma } from "@/lib/db";
-import { reviewListingAction } from "@/app/actions";
+import { useDemo } from "@/lib/demo/store";
+import { reviewListing } from "@/lib/demo/engine";
 import { categoryByKey } from "@/lib/constants";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatPKR, parseJSON } from "@/lib/utils";
+import { formatPKR } from "@/lib/utils";
 
-export const metadata = { title: "Approvals" };
-
-export default async function AdminApprovals() {
-  const [halls, vendors, recentHalls, recentVendors] = await Promise.all([
-    prisma.hall.findMany({ where: { approved: "pending" }, include: { owner: true }, orderBy: { createdAt: "desc" } }),
-    prisma.vendor.findMany({ where: { approved: "pending" }, include: { user: true, packages: true }, orderBy: { createdAt: "desc" } }),
-    prisma.hall.findMany({ where: { approved: { not: "pending" } }, orderBy: { createdAt: "desc" }, take: 5 }),
-    prisma.vendor.findMany({ where: { approved: { not: "pending" } }, orderBy: { createdAt: "desc" }, take: 5 }),
-  ]);
+export default function AdminApprovals() {
+  const db = useDemo((s) => s.db);
+  const apply = useDemo((s) => s.apply);
+  const owner = (id: string) => db.users.find((u) => u.id === id) ?? { name: "—", email: "" };
+  const byNewest = <T extends { createdAt: string }>(a: T, b: T) => b.createdAt.localeCompare(a.createdAt);
+  const halls = db.halls.filter((h) => h.approved === "pending").sort(byNewest).map((h) => ({ ...h, owner: owner(h.ownerId) }));
+  const vendors = db.vendors.filter((v) => v.approved === "pending").sort(byNewest).map((v) => ({ ...v, user: owner(v.userId), packages: db.packages.filter((p) => p.vendorId === v.id) }));
+  const recentHalls = db.halls.filter((h) => h.approved !== "pending").sort(byNewest).slice(0, 5);
+  const recentVendors = db.vendors.filter((v) => v.approved !== "pending").sort(byNewest).slice(0, 5);
   const queue = [
-    ...halls.map((h) => ({ kind: "hall", id: h.id, name: h.name, sub: `${h.type} · ${h.capacityMin}–${h.capacityMax} guests · ${formatPKR(h.pricePerHead)}/head`, city: `${h.area}, ${h.city}`, contact: `${h.owner.name} · ${h.owner.email}`, photo: parseJSON<string[]>(h.photos, [])[0], description: h.description, tag: "Hall" })),
-    ...vendors.map((v) => ({ kind: "vendor", id: v.id, name: v.businessName, sub: `from ${formatPKR(Math.min(...v.packages.map((p) => p.price)))}`, city: v.city, contact: `${v.user.name} · ${v.user.email}`, photo: parseJSON<string[]>(v.photos, [])[0], description: v.description, tag: categoryByKey(v.category)?.label ?? v.category })),
+    ...halls.map((h) => ({ kind: "hall" as const, id: h.id, name: h.name, sub: `${h.type} · ${h.capacityMin}–${h.capacityMax} guests · ${formatPKR(h.pricePerHead)}/head`, city: `${h.area}, ${h.city}`, contact: `${h.owner.name} · ${h.owner.email}`, photo: h.photos[0], description: h.description, tag: "Hall" })),
+    ...vendors.map((v) => ({ kind: "vendor" as const, id: v.id, name: v.businessName, sub: `from ${formatPKR(Math.min(...v.packages.map((p) => p.price)))}`, city: v.city, contact: `${v.user.name} · ${v.user.email}`, photo: v.photos[0], description: v.description, tag: categoryByKey(v.category)?.label ?? v.category })),
   ];
 
   return (
@@ -38,14 +39,8 @@ export default async function AdminApprovals() {
                 <p className="mt-1 line-clamp-2 text-xs text-ink-muted">{q.description}</p>
                 <p className="mt-1 text-xs text-ink-muted">Contact: {q.contact}</p>
                 <div className="mt-3 flex gap-2">
-                  <form action={reviewListingAction}>
-                    <input type="hidden" name="kind" value={q.kind} /><input type="hidden" name="id" value={q.id} /><input type="hidden" name="decision" value="approve" />
-                    <Button size="sm"><Check /> Approve</Button>
-                  </form>
-                  <form action={reviewListingAction}>
-                    <input type="hidden" name="kind" value={q.kind} /><input type="hidden" name="id" value={q.id} /><input type="hidden" name="decision" value="reject" />
-                    <Button size="sm" variant="outline"><X /> Reject</Button>
-                  </form>
+                  <Button size="sm" onClick={() => apply((d) => reviewListing(d, q.kind, q.id, "approve"))}><Check /> Approve</Button>
+                  <Button size="sm" variant="outline" onClick={() => apply((d) => reviewListing(d, q.kind, q.id, "reject"))}><X /> Reject</Button>
                 </div>
               </div>
             </article>

@@ -1,13 +1,12 @@
+"use client";
 import Link from "next/link";
-import { getBusiness } from "@/lib/business";
+import { useBusiness } from "@/lib/demo/use-business";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-export const dynamic = "force-dynamic";
-
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const biz = await getBusiness();
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { biz } = useBusiness();
   if (!biz) {
     return (
       <div className="container max-w-lg py-20 text-center">

@@ -1,5 +1,5 @@
 import { Star } from "lucide-react";
-import type { Review } from "@prisma/client";
+import type { Review } from "@/lib/demo/types";
 
 export function Reviews({ reviews }: { reviews: Review[] }) {
   const avg = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 0;
@@ -21,7 +21,7 @@ export function Reviews({ reviews }: { reviews: Review[] }) {
             </div>
             <p className="mt-2 text-sm text-ink-muted">“{r.comment}”</p>
             <p className="mt-2 text-xs text-ink-muted/80">
-              {r.createdAt.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+              {new Date(r.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
               {r.bookingId && " · Booked on Rasm"}
             </p>
           </li>

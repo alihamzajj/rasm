@@ -1,32 +1,31 @@
+"use client";
 import Link from "next/link";
-import type { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/db";
+import { useSearchParams } from "next/navigation";
+import { useDemo } from "@/lib/demo/store";
+import { paidFor } from "@/lib/demo/selectors";
 import { CITIES } from "@/lib/constants";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPKR, prettyDate } from "@/lib/utils";
 
-export const metadata = { title: "All bookings" };
-
-type SP = { status?: string; city?: string; from?: string; to?: string; q?: string };
-
-export default async function AdminBookings({ searchParams }: { searchParams: SP }) {
-  const { status = "", city = "", from = "", to = "", q = "" } = searchParams;
-  const where: Prisma.BookingWhereInput = {};
-  if (status) where.status = status;
-  if (from || to) where.eventDate = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) };
-  if (q) where.OR = [{ code: { contains: q.toUpperCase() } }, { eventName: { contains: q } }, { customer: { name: { contains: q } } }];
-
-  let bookings = await prisma.booking.findMany({ where, include: { customer: true, items: true, payments: true }, orderBy: { eventDate: "desc" } });
-  if (city) {
-    const hallIds = new Set((await prisma.hall.findMany({ where: { city }, select: { id: true } })).map((h) => h.id));
-    bookings = bookings.filter((b) => b.items.some((i) => i.type === "hall" && hallIds.has(i.refId)));
-  }
+export default function AdminBookings() {
+  const sp = useSearchParams();
+  const get = (k: string) => sp.get(k) ?? "";
+  const status = get("status"), city = get("city"), from = get("from"), to = get("to"), q = get("q");
+  const db = useDemo((s) => s.db);
+  const cityHalls = new Set(db.halls.filter((h) => h.city === city).map((h) => h.id));
+  const needle = q.toLowerCase();
+  const bookings = db.bookings
+    .map((b) => ({ ...b, customer: db.users.find((u) => u.id === b.customerId) ?? { name: "—" }, items: db.items.filter((i) => i.bookingId === b.id) }))
+    .filter((b) => (!status || b.status === status) && (!from || b.eventDate >= from) && (!to || b.eventDate <= to))
+    .filter((b) => !q || b.code.toLowerCase().includes(needle) || b.eventName.toLowerCase().includes(needle) || b.customer.name.toLowerCase().includes(needle))
+    .filter((b) => !city || b.items.some((i) => i.type === "hall" && cityHalls.has(i.refId)))
+    .sort((a, b) => b.eventDate.localeCompare(a.eventDate));
   const total = bookings.reduce((a, b) => a + b.totalAmount, 0);
 
   return (
     <div>
-      <form method="get" className="grid gap-3 rounded-[6px] border border-line bg-white p-4 sm:grid-cols-3 lg:grid-cols-6">
+      <form key={sp.toString()} method="get" className="grid gap-3 rounded-[6px] border border-line bg-white p-4 sm:grid-cols-3 lg:grid-cols-6">
         <input name="q" defaultValue={q} placeholder="Code, event or customer" className="field lg:col-span-2" aria-label="Search" />
         <select name="status" defaultValue={status} className="field" aria-label="Status">
           <option value="">All statuses</option>
@@ -51,7 +50,7 @@ export default async function AdminBookings({ searchParams }: { searchParams: SP
           </thead>
           <tbody className="divide-y divide-line">
             {bookings.map((b) => {
-              const paid = b.payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
+              const paid = paidFor(db, b.id);
               return (
                 <tr key={b.id} className="align-top">
                   <td className="p-3 whitespace-nowrap font-bold text-maroon">{b.code}</td>

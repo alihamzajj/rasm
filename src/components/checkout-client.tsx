@@ -5,7 +5,8 @@ import { Timer, CreditCard, Smartphone, Loader2, Lock, AlertTriangle, RotateCcw 
 import { Button } from "./ui/button";
 import { useCart } from "@/store/cart";
 import { formatPKR, prettyDate, cn } from "@/lib/utils";
-import { payAction, cancelHoldAction, startCheckoutAction } from "@/app/actions";
+import { useDemo, useCustomerId } from "@/lib/demo/store";
+import { startCheckout, confirmPayment, cancelHold, SlotConflictError } from "@/lib/demo/engine";
 
 type B = { id: string; code: string; eventName: string; eventDate: string; guests: number; total: number; advance: number; items: { id: string; label: string; price: number; type: string }[] };
 
@@ -16,6 +17,8 @@ export function CheckoutClient({ booking, heldUntil, policy }: { booking: B; hel
   const [method, setMethod] = useState<"card" | "jazzcash" | "easypaisa">("card");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const customerId = useCustomerId();
+  const apply = useDemo((s) => s.apply);
 
   useEffect(() => {
     if (!heldUntil) return;
@@ -33,19 +36,21 @@ export function CheckoutClient({ booking, heldUntil, policy }: { booking: B; hel
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const res = await payAction({ bookingId: booking.id, method });
-      if (!res.ok) {
-        setError(res.conflicts ? `Sorry — ${res.conflicts.join(", ")} was booked by someone else after your hold ran out. Nothing was charged.` : res.error);
-        return;
+      await new Promise((r) => setTimeout(r, 900)); // simulate the gateway
+      try {
+        const next = confirmPayment(useDemo.getState().db, booking.id, customerId, method);
+        cart.clear();
+        router.push(`/booking/${booking.id}?new=1`);
+        useDemo.setState({ db: next });
+      } catch (e) {
+        setError(e instanceof SlotConflictError ? `Sorry — ${e.labels.join(", ")} was booked by someone else after your hold ran out. Nothing was charged.` : (e as Error).message);
       }
-      cart.clear();
-      router.push(`/booking/${booking.id}?new=1`);
     });
   };
 
   const holdAgain = () => {
     setError(null);
-    startTransition(async () => {
+    startTransition(() => {
       const lines = cart.hall || cart.vendors.length
         ? [
             ...(cart.hall ? [{ type: "hall" as const, refId: cart.hall.hallId, packageId: cart.hall.packageId }] : []),
@@ -53,18 +58,21 @@ export function CheckoutClient({ booking, heldUntil, policy }: { booking: B; hel
           ]
         : [];
       if (!lines.length) return router.push("/packages");
-      await cancelHoldAction(booking.id);
-      const res = await startCheckoutAction({ eventName: cart.eventName, eventDate: cart.eventDate, guests: cart.hall ? cart.guests : 0, lines });
-      if (!res.ok) return setError(res.error);
-      cart.setPending(res.data);
-      router.replace(`/checkout?b=${res.data.bookingId}`);
-      router.refresh();
+      try {
+        const released = cancelHold(useDemo.getState().db, booking.id);
+        const { db, result } = startCheckout(released, { customerId, eventName: cart.eventName, eventDate: cart.eventDate, guests: cart.hall ? cart.guests : 0, lines });
+        cart.setPending(result);
+        router.replace(`/checkout?b=${result.bookingId}`);
+        useDemo.setState({ db });
+      } catch (e) {
+        setError((e as Error).message);
+      }
     });
   };
 
   const leave = () => {
-    startTransition(async () => {
-      await cancelHoldAction(booking.id);
+    startTransition(() => {
+      apply((db) => cancelHold(db, booking.id));
       cart.setPending(null);
       router.push("/packages");
     });

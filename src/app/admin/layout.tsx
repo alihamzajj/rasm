@@ -1,12 +1,11 @@
+"use client";
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/session";
+import { useCurrentUser } from "@/lib/demo/store";
 import { TabNav } from "@/components/dashboard/dashboard-nav";
 import { Button } from "@/components/ui/button";
 
-export const dynamic = "force-dynamic";
-
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const user = useCurrentUser();
   if (user?.role !== "admin") {
     return (
       <div className="container max-w-lg py-20 text-center">

@@ -7,25 +7,36 @@ Built with Next.js 14 (App Router) · TypeScript · Tailwind CSS + shadcn/ui-sty
 Framer Motion · lottie-react · tsParticles (fireworks preset) · Prisma + SQLite · Zustand ·
 react-day-picker. Payments are simulated.
 
+## Demo mode (how this prototype runs)
+
+The prototype needs **no database or server data**. All demo data (halls, vendors, packages,
+bookings, reviews, availability) is bundled in `src/lib/demo/seed.json` and copied into each
+visitor's browser (localStorage) on first visit. Every visitor gets a private sandbox: their
+bookings, blocked dates and approvals only change their own copy. **Reset demo** in the top bar
+restores the original data. Dates are shifted to today on load, so the demo always looks current.
+
+- Data store: `src/lib/demo/store.ts` (Zustand + localStorage)
+- Booking rules (15-minute holds, expiry, no double booking): `src/lib/demo/engine.ts`
+- Feature tour for visitors: `/features`
+
 ## Setup
 
 ```bash
 npm install
-npx prisma migrate dev      # creates prisma/dev.db and runs the seed automatically
-npm run db:seed             # (re)seed any time
 npm run dev                 # http://localhost:3500
+npm run build               # production build (deploys as-is to Vercel)
 ```
-
-Useful scripts:
 
 | Script | What it does |
 | --- | --- |
 | `npm run dev` | Dev server on port 3500 |
 | `npm run build` / `npm start` | Production build / server |
-| `npm run db:seed` | Wipe and reseed demo data |
-| `npm run db:reset` | Drop the database, re-migrate and reseed |
-| `npm run test:booking` | Checks the double-booking rule against the database |
+| `npm run test:booking` | Checks the booking rules of the demo engine |
 | `npm run lottie` | Regenerates `public/lottie/mandap.json` |
+| `npm run db:seed` then `npm run demo:export` | Regenerate the demo data from the Prisma seed (needs `npx prisma migrate dev` once) |
+
+The Prisma schema and seed (`prisma/`) are kept as the source of the demo data and as the
+starting point for the real backend later.
 
 ## Demo logins (no passwords)
 
@@ -39,7 +50,7 @@ Open **Log in** and pick a role. You can switch at any time.
 | Admin | Rasm Admin | `/admin` |
 
 If nobody is logged in, customer actions (checkout, my bookings) use the demo customer, so the
-booking flow never dead-ends.
+booking flow never dead-ends. The chosen role is remembered in the browser.
 
 ## Pages
 
@@ -56,22 +67,15 @@ availability (`/dashboard/availability`), booking requests (`/dashboard/requests
 
 ## The booking rule (no double booking)
 
-All logic lives in [`src/lib/booking.ts`](src/lib/booking.ts).
-
-1. **Start checkout** (`startCheckout`): inside one database transaction, release expired
-   holds, re-price every line from the database, check the hall date and every vendor date,
-   create a `pending` booking, and mark each slot `held` with `heldUntil = now + 15 min`.
-   A unique index on `(hallId, date)` / `(vendorId, date)` stops two customers holding the same
-   slot even if they click at the same instant.
-2. **Pay** (`confirmPayment`): inside a transaction, confirm only if every slot is still free or
-   held by *this* booking. Then mark the slots `booked`, record the payment and set the booking
-   to `confirmed`. Otherwise nothing is charged and the customer sees which item was taken.
-3. **Expired holds** are released automatically before every availability read or write
-   (`releaseExpiredHolds`), so a held date frees itself as soon as its 15 minutes pass.
+1. **Start checkout:** every line is re-priced, each hall/vendor date is checked, a `pending`
+   booking is created and each slot is marked `held` with `heldUntil = now + 15 min`.
+2. **Pay:** confirm only if every slot is still free or held by *this* booking; then the slots
+   become `booked` and the booking `confirmed`. Otherwise nothing is charged.
+3. **Expired holds** count as free immediately and are cleaned up on the next change.
 4. Booked, held and blocked dates are disabled in every calendar.
 
-`npm run test:booking` proves this end to end (hold, block a second customer, expiry, late
-payment refused, confirmation, and a two-customer race).
+In the demo this runs in the browser. For production, the same rules go in a server
+transaction (the earlier Prisma version is in git history, commit `104bfad`).
 
 ## Data model
 
@@ -111,6 +115,4 @@ Hall and vendor photos are free-to-use Unsplash images (Unsplash licence), refer
 ## Notes
 
 - Payments are mocked: the "Pay advance" form accepts any values and never contacts a gateway.
-- The cart and the wedding planner are stored in the browser (Zustand + localStorage).
-- On Node 25, Next's dev server is fine; the stores guard `localStorage` so the server never
-  touches it.
+- Everything (data, cart, planner, chosen role) is stored in the visitor's browser.

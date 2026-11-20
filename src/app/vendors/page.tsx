@@ -1,16 +1,14 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
-import { prisma } from "@/lib/db";
+import { useDemo } from "@/lib/demo/store";
 import { CATEGORIES, unsplash } from "@/lib/constants";
 import { SectionHeading } from "@/components/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 
-export const dynamic = "force-dynamic";
-export const metadata = { title: "Wedding vendors" };
-
-export default async function VendorsIndex() {
-  const counts = await prisma.vendor.groupBy({ by: ["category"], where: { approved: "approved" }, _count: { _all: true } });
-  const countOf = (k: string) => counts.find((c) => c.category === k)?._count._all ?? 0;
+export default function VendorsIndex() {
+  const vendors = useDemo((s) => s.db.vendors);
+  const countOf = (k: string) => vendors.filter((v) => v.category === k && v.approved === "approved").length;
   return (
     <section className="section">
       <div className="container">

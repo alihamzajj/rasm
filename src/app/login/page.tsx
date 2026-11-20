@@ -1,11 +1,10 @@
+"use client";
+import { useRouter, useSearchParams } from "next/navigation";
 import { User, Building2, Camera, Shield } from "lucide-react";
-import { DEMO_USERS, getCurrentUser } from "@/lib/session";
-import { loginAsAction } from "@/app/actions";
+import { DEMO_USERS } from "@/lib/demo/users";
+import { useDemo } from "@/lib/demo/store";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { Logo } from "@/components/logo";
-
-export const dynamic = "force-dynamic";
-export const metadata = { title: "Log in" };
 
 const ICONS = { customer: User, hall_owner: Building2, vendor: Camera, admin: Shield } as const;
 const BLURB = {
@@ -15,8 +14,11 @@ const BLURB = {
   admin: "Approve new halls and vendors, view all bookings and set the commission.",
 } as const;
 
-export default async function LoginPage({ searchParams }: { searchParams: { next?: string } }) {
-  const current = await getCurrentUser();
+export default function LoginPage() {
+  const router = useRouter();
+  const next = useSearchParams().get("next");
+  const currentId = useDemo((s) => s.userId);
+  const setUser = useDemo((s) => s.setUser);
   return (
     <div className="container max-w-3xl py-14">
       <div className="flex justify-center"><Logo /></div>
@@ -26,12 +28,10 @@ export default async function LoginPage({ searchParams }: { searchParams: { next
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
         {DEMO_USERS.map((u) => {
           const Icon = ICONS[u.role];
-          const isCurrent = current?.id === u.id;
+          const isCurrent = currentId === u.id;
           return (
-            <form key={u.id} action={loginAsAction}>
-              <input type="hidden" name="userId" value={u.id} />
-              {searchParams.next && <input type="hidden" name="next" value={searchParams.next} />}
-              <button className={`group flex h-full w-full gap-4 rounded-[6px] border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-gold hover:shadow-lg ${isCurrent ? "border-maroon ring-2 ring-maroon/15" : "border-line"}`}>
+            <div key={u.id}>
+              <button onClick={() => { setUser(u.id); window.scrollTo(0, 0); router.push(next || u.home); }} className={`group flex h-full w-full gap-4 rounded-[6px] border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-gold hover:shadow-lg ${isCurrent ? "border-maroon ring-2 ring-maroon/15" : "border-line"}`}>
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-gold bg-cream text-maroon ring-4 ring-gold/10">
                   <Icon className="h-5 w-5" />
                 </span>
@@ -42,7 +42,7 @@ export default async function LoginPage({ searchParams }: { searchParams: { next
                   <span className="mt-3 inline-block text-xs font-bold text-maroon group-hover:underline">Continue as {u.label.toLowerCase()} →</span>
                 </span>
               </button>
-            </form>
+            </div>
           );
         })}
       </div>

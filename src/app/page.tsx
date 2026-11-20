@@ -1,9 +1,10 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Search, PackagePlus, BadgeCheck } from "lucide-react";
-import { prisma } from "@/lib/db";
 import { CATEGORIES, unsplash } from "@/lib/constants";
-import { reviewCounts, toHallView } from "@/lib/queries";
+import { useDemo } from "@/lib/demo/store";
+import { approvedHalls, approvedVendors, hallCard } from "@/lib/demo/selectors";
 import { HallCard } from "@/components/hall-card";
 import { SectionHeading } from "@/components/section-heading";
 import { Reveal } from "@/components/motion/reveal";
@@ -15,8 +16,6 @@ import { HeroSearch } from "@/components/home/hero-search";
 import { PackageEstimator } from "@/components/home/package-estimator";
 import { Button } from "@/components/ui/button";
 
-export const dynamic = "force-dynamic";
-
 const HERO_PHOTO = unsplash("photo-1587271407850-8d438ca9fdf2", 2000);
 
 const TILES = [
@@ -27,18 +26,16 @@ const TILES = [
   }),
 ];
 
-export default async function HomePage() {
-  const [halls, counts, minPkgs, hallAgg] = await Promise.all([
-    prisma.hall.findMany({ where: { approved: "approved" }, orderBy: { rating: "desc" }, take: 6 }),
-    reviewCounts("hall"),
-    prisma.vendor.findMany({ where: { approved: "approved" }, select: { category: true, packages: { select: { price: true }, orderBy: { price: "asc" }, take: 1 } } }),
-    prisma.hall.aggregate({ where: { approved: "approved" }, _avg: { pricePerHead: true, basePrice: true } }),
-  ]);
-
+export default function HomePage() {
+  const db = useDemo((s) => s.db);
+  const all = approvedHalls(db);
+  const halls = [...all].sort((a, b) => b.rating - a.rating).slice(0, 6);
+  const vendors = approvedVendors(db);
   const services = CATEGORIES.map((c) => {
-    const prices = minPkgs.filter((v) => v.category === c.key).map((v) => v.packages[0]?.price ?? 0).filter(Boolean);
+    const prices = vendors.filter((v) => v.category === c.key).map((v) => v.minPrice).filter(Boolean);
     return { key: c.key, label: c.label, from: prices.length ? Math.min(...prices) : 0 };
   });
+  const avg = (k: "pricePerHead" | "basePrice") => (all.length ? all.reduce((a, h) => a + h[k], 0) / all.length : 0);
 
   return (
     <>
@@ -63,7 +60,10 @@ export default async function HomePage() {
             <HeroSearch />
           </Reveal>
           <Reveal delay={0.25}>
-            <p className="mt-6 text-sm text-ivory/70">12 verified halls · 40 vendors · Lahore, Karachi and Islamabad</p>
+            <p className="mt-6 text-sm text-ivory/70">
+              {all.length} verified halls · {vendors.length} vendors · Lahore, Karachi and Islamabad ·{" "}
+              <Link href="/features" className="font-bold text-gold-soft hover:underline">Take the feature tour →</Link>
+            </p>
           </Reveal>
         </div>
       </section>
@@ -88,9 +88,7 @@ export default async function HomePage() {
             ))}
           </div>
           <div className="mt-8 text-center">
-            <Link href="/vendors" className="text-sm font-bold text-maroon hover:underline">
-              See all 8 vendor categories →
-            </Link>
+            <Link href="/vendors" className="text-sm font-bold text-maroon hover:underline">See all 8 vendor categories →</Link>
           </div>
         </div>
       </section>
@@ -102,15 +100,13 @@ export default async function HomePage() {
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {halls.map((h, i) => (
               <Reveal key={h.id} delay={(i % 3) * 0.08}>
-                <HallCard hall={toHallView(h, counts.get(h.id) ?? 0)} />
+                <HallCard hall={hallCard(db, h)} />
               </Reveal>
             ))}
           </div>
           <div className="mt-10 text-center">
             <Button asChild variant="outline">
-              <Link href="/halls">
-                View all halls <ArrowRight />
-              </Link>
+              <Link href="/halls">View all halls <ArrowRight /></Link>
             </Button>
           </div>
         </div>
@@ -125,7 +121,7 @@ export default async function HomePage() {
             <SectionHeading eyebrow="One booking, one advance" title="Build your package" sub="Pick a guest count and the services you need — see your total and the advance instantly." />
           </div>
           <Reveal>
-            <PackageEstimator services={services} hallPerHead={Math.round(hallAgg._avg.pricePerHead ?? 3000)} hallBase={Math.round(hallAgg._avg.basePrice ?? 400000)} />
+            <PackageEstimator services={services} hallPerHead={Math.round(avg("pricePerHead"))} hallBase={Math.round(avg("basePrice"))} />
           </Reveal>
         </div>
       </section>
@@ -170,12 +166,8 @@ export default async function HomePage() {
           <OrnamentDivider light className="mt-5" />
           <p className="mx-auto mt-4 max-w-xl text-ivory/80">Get bookings with the advance already paid, manage your calendar and accept requests from one dashboard.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild variant="gold" size="lg">
-              <Link href="/list-your-business">List your business</Link>
-            </Button>
-            <Button asChild variant="light" size="lg">
-              <Link href="/login">Try the dashboards</Link>
-            </Button>
+            <Button asChild variant="gold" size="lg"><Link href="/list-your-business">List your business</Link></Button>
+            <Button asChild variant="light" size="lg"><Link href="/login">Try the dashboards</Link></Button>
           </div>
         </div>
       </section>

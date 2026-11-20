@@ -1,20 +1,22 @@
+"use client";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
-import { prisma } from "@/lib/db";
+import { useDemo } from "@/lib/demo/store";
+import { paidFor } from "@/lib/demo/selectors";
 import { FireworksBanner } from "@/components/fireworks-banner";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPKR, prettyDate } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-export const metadata = { title: "Booking confirmed" };
-
-export default async function BookingConfirmed({ params }: { params: { id: string } }) {
-  const b = await prisma.booking.findUnique({ where: { id: params.id }, include: { items: true, payments: true } });
-  if (!b) notFound();
-  const paid = b.payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
+export default function BookingConfirmed() {
+  const { id } = useParams<{ id: string }>();
+  const db = useDemo((s) => s.db);
+  const booking = db.bookings.find((x) => x.id === id);
+  if (!booking) notFound();
+  const b = { ...booking, items: db.items.filter((i) => i.bookingId === booking.id) };
+  const paid = paidFor(db, b.id);
   const confirmed = b.status === "confirmed" || b.status === "completed";
 
   const head = (

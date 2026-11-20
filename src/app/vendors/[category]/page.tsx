@@ -1,9 +1,11 @@
+"use client";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import type { Prisma } from "@prisma/client";
+import { notFound, useParams, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, ChevronLeft } from "lucide-react";
 import { CATEGORIES, CITIES, categoryBySlug } from "@/lib/constants";
-import { getVendorsView, unavailableIdsOn } from "@/lib/queries";
+import { useDemo } from "@/lib/demo/store";
+import { approvedVendors } from "@/lib/demo/selectors";
+import { unavailableIdsOn } from "@/lib/demo/engine";
 import { VendorCard } from "@/components/vendor-card";
 import { Reveal } from "@/components/motion/reveal";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
@@ -11,26 +13,20 @@ import { FireworksBanner } from "@/components/fireworks-banner";
 import { Button } from "@/components/ui/button";
 import { prettyDate, toDateKey } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-
-export function generateMetadata({ params }: { params: { category: string } }) {
-  return { title: categoryBySlug(params.category)?.plural ?? "Vendors" };
-}
-
-type SP = { city?: string; date?: string; max?: string; rating?: string; sort?: string };
-
-export default async function VendorCategoryPage({ params, searchParams }: { params: { category: string }; searchParams: SP }) {
+export default function VendorCategoryPage() {
+  const params = useParams<{ category: string }>();
+  const sp = useSearchParams();
+  const db = useDemo((s) => s.db);
   const cat = categoryBySlug(params.category);
   if (!cat) notFound();
-  const { city = "", date = "", max = "", rating = "", sort = "rating" } = searchParams;
+  const get = (k: string) => sp.get(k) ?? "";
+  const city = get("city"), date = get("date"), max = get("max"), rating = get("rating");
+  const sort = get("sort") || "rating";
 
-  const where: Prisma.VendorWhereInput = { category: cat.key };
-  if (city) where.city = city;
-  if (rating) where.rating = { gte: Number(rating) };
-
-  let vendors = await getVendorsView(where);
-  if (max) vendors = vendors.filter((v) => v.minPrice <= Number(max));
-  const unavailable = date ? await unavailableIdsOn(date) : null;
+  const vendors = approvedVendors(db).filter(
+    (v) => v.category === cat.key && (!city || v.city === city) && (!rating || v.rating >= Number(rating)) && (!max || v.minPrice <= Number(max))
+  );
+  const unavailable = date ? unavailableIdsOn(db, date) : null;
   const visible = unavailable ? vendors.filter((v) => !unavailable.vendors.has(v.id)) : vendors;
   visible.sort((a, b) => (sort === "price_asc" ? a.minPrice - b.minPrice : sort === "price_desc" ? b.minPrice - a.minPrice : b.rating - a.rating));
   const tomorrow = new Date();
@@ -68,7 +64,7 @@ export default async function VendorCategoryPage({ params, searchParams }: { par
 
       <div className="container grid gap-8 pb-16 lg:grid-cols-[260px_1fr]">
         <aside>
-          <form method="get" className="sticky top-24 space-y-4 rounded-[6px] border border-line bg-white p-5">
+          <form key={sp.toString()} method="get" className="sticky top-24 space-y-4 rounded-[6px] border border-line bg-white p-5">
             <p className="flex items-center gap-2 font-display text-lg text-maroon"><SlidersHorizontal className="h-4 w-4 text-gold" /> Filters</p>
             <div>
               <label className="label" htmlFor="city">City</label>

@@ -1,28 +1,29 @@
+"use client";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { CalendarDays, Users } from "lucide-react";
-import { prisma } from "@/lib/db";
-import { getCurrentUser, getCustomerId } from "@/lib/session";
-import { cancelBookingAction } from "@/app/actions";
+import { useDemo, useCurrentUser, useCustomerId } from "@/lib/demo/store";
+import { cancelBooking } from "@/lib/demo/engine";
+import { paidFor } from "@/lib/demo/selectors";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { Reveal } from "@/components/motion/reveal";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPKR, prettyDate } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-export const metadata = { title: "My bookings" };
-
 const TABS = ["all", "pending", "confirmed", "completed", "cancelled"] as const;
 
-export default async function MyBookings({ searchParams }: { searchParams: { status?: string } }) {
-  const user = await getCurrentUser();
-  const customerId = await getCustomerId();
-  const status = TABS.includes(searchParams.status as (typeof TABS)[number]) ? searchParams.status! : "all";
-  const bookings = await prisma.booking.findMany({
-    where: { customerId, ...(status !== "all" ? { status } : {}) },
-    include: { items: true, payments: true },
-    orderBy: { eventDate: "desc" },
-  });
+export default function MyBookings() {
+  const user = useCurrentUser();
+  const customerId = useCustomerId();
+  const db = useDemo((s) => s.db);
+  const apply = useDemo((s) => s.apply);
+  const q = useSearchParams().get("status") ?? "";
+  const status = TABS.includes(q as (typeof TABS)[number]) ? q : "all";
+  const bookings = db.bookings
+    .filter((b) => b.customerId === customerId && (status === "all" || b.status === status))
+    .sort((a, b) => b.eventDate.localeCompare(a.eventDate))
+    .map((b) => ({ ...b, items: db.items.filter((i) => i.bookingId === b.id) }));
 
   return (
     <div>
@@ -49,7 +50,7 @@ export default async function MyBookings({ searchParams }: { searchParams: { sta
         ) : (
           <div className="space-y-4">
             {bookings.map((b, i) => {
-              const paid = b.payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0);
+              const paid = paidFor(db, b.id);
               return (
                 <Reveal key={b.id} delay={i * 0.05}>
                   <article className="rounded-[6px] border border-line bg-white p-5">
@@ -86,10 +87,7 @@ export default async function MyBookings({ searchParams }: { searchParams: { sta
                           <Button asChild size="sm" variant="outline"><Link href={`/booking/${b.id}`}>View</Link></Button>
                         )}
                         {(b.status === "pending" || b.status === "confirmed") && (
-                          <form action={cancelBookingAction}>
-                            <input type="hidden" name="bookingId" value={b.id} />
-                            <Button size="sm" variant="ghost" className="text-rose-700">Cancel</Button>
-                          </form>
+                          <Button size="sm" variant="ghost" className="text-rose-700" onClick={() => apply((d) => cancelBooking(d, b.id, customerId))}>Cancel</Button>
                         )}
                       </div>
                     </div>

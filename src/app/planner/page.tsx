@@ -1,26 +1,25 @@
-import { prisma } from "@/lib/db";
-import { getCustomerId } from "@/lib/session";
+"use client";
+import { useDemo, useCustomerId } from "@/lib/demo/store";
 import { Planner } from "@/components/planner";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 
-export const dynamic = "force-dynamic";
-export const metadata = { title: "Wedding planner" };
-
-export default async function PlannerPage() {
-  const customerId = await getCustomerId();
-  const bookings = await prisma.booking.findMany({
-    where: { customerId, status: { in: ["confirmed", "pending"] } },
-    include: { items: true },
-    orderBy: { eventDate: "asc" },
-  });
-  const booked = bookings.map((b) => ({
-    code: b.code,
-    eventName: b.eventName,
-    eventDate: b.eventDate,
-    status: b.status,
-    venue: b.items.find((i) => i.type === "hall")?.label.split(" · ")[0] ?? "",
-    vendors: b.items.filter((i) => i.type === "vendor").map((i) => i.label.split(" · ")[0]),
-  }));
+export default function PlannerPage() {
+  const customerId = useCustomerId();
+  const db = useDemo((s) => s.db);
+  const booked = db.bookings
+    .filter((b) => b.customerId === customerId && (b.status === "confirmed" || b.status === "pending"))
+    .sort((a, b) => a.eventDate.localeCompare(b.eventDate))
+    .map((b) => {
+      const items = db.items.filter((i) => i.bookingId === b.id);
+      return {
+        code: b.code,
+        eventName: b.eventName,
+        eventDate: b.eventDate,
+        status: b.status,
+        venue: items.find((i) => i.type === "hall")?.label.split(" · ")[0] ?? "",
+        vendors: items.filter((i) => i.type === "vendor").map((i) => i.label.split(" · ")[0]),
+      };
+    });
   return (
     <div>
       <section className="border-b border-line bg-cream py-10 text-center">

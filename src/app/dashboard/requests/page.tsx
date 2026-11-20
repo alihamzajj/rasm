@@ -1,15 +1,19 @@
+"use client";
 import { Check, X, Phone } from "lucide-react";
-import { getBusiness, getBusinessItems } from "@/lib/business";
-import { respondToItemAction } from "@/app/actions";
+import { useBusiness } from "@/lib/demo/use-business";
+import { useDemo } from "@/lib/demo/store";
+import { getBusinessItems } from "@/lib/demo/selectors";
+import { respondToItem } from "@/lib/demo/engine";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPKR, prettyDate } from "@/lib/utils";
 
-export const metadata = { title: "Booking requests" };
-
-export default async function RequestsPage() {
-  const biz = (await getBusiness())!;
-  const items = await getBusinessItems(biz.listings);
+export default function RequestsPage() {
+  const { db, biz } = useBusiness();
+  const apply = useDemo((s) => s.apply);
+  const userId = useDemo((s) => s.userId) ?? "";
+  if (!biz) return null;
+  const items = getBusinessItems(db, biz.listings);
   const open = items.filter((i) => i.status === "requested" && i.booking.status === "confirmed");
   const history = items.filter((i) => !(i.status === "requested" && i.booking.status === "confirmed")).reverse();
 
@@ -37,16 +41,8 @@ export default async function RequestsPage() {
                 <span className="font-display text-xl text-maroon">{formatPKR(i.price)}</span>
               </div>
               <div className="mt-4 flex gap-2">
-                <form action={respondToItemAction} className="flex-1">
-                  <input type="hidden" name="itemId" value={i.id} />
-                  <input type="hidden" name="decision" value="accept" />
-                  <Button className="w-full" size="sm"><Check /> Accept</Button>
-                </form>
-                <form action={respondToItemAction} className="flex-1">
-                  <input type="hidden" name="itemId" value={i.id} />
-                  <input type="hidden" name="decision" value="decline" />
-                  <Button className="w-full" size="sm" variant="outline"><X /> Decline</Button>
-                </form>
+                <Button className="flex-1" size="sm" onClick={() => apply((d) => respondToItem(d, userId, i.id, "accept"))}><Check /> Accept</Button>
+                <Button className="flex-1" size="sm" variant="outline" onClick={() => apply((d) => respondToItem(d, userId, i.id, "decline"))}><X /> Decline</Button>
               </div>
             </article>
           ))}

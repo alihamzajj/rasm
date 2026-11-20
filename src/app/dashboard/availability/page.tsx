@@ -1,14 +1,13 @@
-import { getBusiness } from "@/lib/business";
-import { getUnavailableDates } from "@/lib/booking";
+"use client";
+import { useBusiness } from "@/lib/demo/use-business";
+import { unavailableDates } from "@/lib/demo/engine";
 import { BusinessCalendar } from "@/components/dashboard/business-calendar";
 
-export const metadata = { title: "Availability" };
-
-export default async function AvailabilityPage() {
-  const biz = (await getBusiness())!;
-  const listing = biz.listings[0];
+export default function AvailabilityPage() {
+  const { db, biz } = useBusiness();
+  const listing = biz?.listings[0];
   if (!listing) return <p>No listing yet.</p>;
-  const days = await getUnavailableDates(listing.kind === "hall" ? { hallId: listing.id } : { vendorId: listing.id });
+  const days = unavailableDates(db, listing.kind === "hall" ? { hallId: listing.id } : { vendorId: listing.id });
   return (
     <div className="mx-auto max-w-3xl">
       <h2 className="text-2xl">Availability</h2>

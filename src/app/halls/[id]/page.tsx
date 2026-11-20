@@ -1,9 +1,10 @@
+"use client";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useParams, useSearchParams } from "next/navigation";
 import { MapPin, Users, Star, Check, ChevronLeft } from "lucide-react";
-import { prisma } from "@/lib/db";
-import { toHallView } from "@/lib/queries";
-import { getUnavailableDates } from "@/lib/booking";
+import { useDemo } from "@/lib/demo/store";
+import { packagesFor, reviewsFor } from "@/lib/demo/selectors";
+import { unavailableDates } from "@/lib/demo/engine";
 import { Gallery } from "@/components/gallery";
 import { HallBooker } from "@/components/hall-booker";
 import { Reviews } from "@/components/reviews";
@@ -12,21 +13,17 @@ import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { Reveal } from "@/components/motion/reveal";
 import { formatPKR } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-
-export async function generateMetadata({ params }: { params: { id: string } }) {
-  const h = await prisma.hall.findUnique({ where: { id: params.id }, select: { name: true } });
-  return { title: h?.name ?? "Hall" };
-}
-
-export default async function HallDetail({ params, searchParams }: { params: { id: string }; searchParams: { date?: string } }) {
-  const raw = await prisma.hall.findUnique({ where: { id: params.id }, include: { packages: { orderBy: { price: "asc" } } } });
-  if (!raw || raw.approved !== "approved") notFound();
-  const [reviews, unavailable] = await Promise.all([
-    prisma.review.findMany({ where: { targetType: "hall", targetId: raw.id }, orderBy: { createdAt: "desc" } }),
-    getUnavailableDates({ hallId: raw.id }),
-  ]);
-  const hall = toHallView(raw, reviews.length);
+export default function HallDetail() {
+  const { id } = useParams<{ id: string }>();
+  const sp = useSearchParams();
+  const db = useDemo((s) => s.db);
+  const hall = db.halls.find((h) => h.id === id);
+  if (!hall || hall.approved !== "approved") notFound();
+  const packages = packagesFor(db, "hall", hall.id);
+  const reviews = reviewsFor(db, "hall", hall.id);
+  const unavailable = unavailableDates(db, { hallId: hall.id });
+  const searchParams = { date: sp.get("date") ?? undefined };
+  const raw = { packages };
 
   return (
     <div className="container py-8 md:py-10">

@@ -1,20 +1,20 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
-import { Loader2 } from "lucide-react";
 import { CalendarLegend, type DayStatus } from "../availability-calendar";
 import { fromDateKey, toDateKey, prettyDate } from "@/lib/utils";
-import { toggleBlockDateAction } from "@/app/actions";
+import { useDemo } from "@/lib/demo/store";
+import { toggleBlockDate } from "@/lib/demo/engine";
 
 /**
  * Owner calendar. Read-only on the overview; on the availability page, clicking a free
  * date blocks it and clicking a blocked date frees it. Booked/held dates can't be changed.
  */
 export function BusinessCalendar({ days, editable, listing }: { days: DayStatus[]; editable?: boolean; listing?: { kind: "hall" | "vendor"; id: string } }) {
-  const [state, setState] = useState<DayStatus[]>(days);
+  const state = days;
   const [msg, setMsg] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const userId = useDemo((s) => s.userId);
   const by = (s: DayStatus["status"]) => state.filter((d) => d.status === s).map((d) => fromDateKey(d.date));
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -27,16 +27,13 @@ export function BusinessCalendar({ days, editable, listing }: { days: DayStatus[
       setMsg(`${prettyDate(key)} is ${cur.status} by a customer and can't be blocked.`);
       return;
     }
-    // optimistic toggle
-    setState((s) => (cur ? s.filter((x) => x.date !== key) : [...s, { date: key, status: "blocked" }]));
-    setMsg(null);
-    start(async () => {
-      const res = await toggleBlockDateAction({ kind: listing.kind, id: listing.id, date: key });
-      if (!res.ok) {
-        setMsg(res.error);
-        setState(days);
-      } else setMsg(`${prettyDate(key)} is now ${res.data.status === "blocked" ? "blocked" : "free"}.`);
-    });
+    try {
+      const { db, status } = toggleBlockDate(useDemo.getState().db, userId ?? "", listing.kind, listing.id, key);
+      useDemo.setState({ db });
+      setMsg(`${prettyDate(key)} is now ${status === "blocked" ? "blocked" : "free"}.`);
+    } catch (e) {
+      setMsg((e as Error).message);
+    }
   };
 
   return (
@@ -53,7 +50,6 @@ export function BusinessCalendar({ days, editable, listing }: { days: DayStatus[
       </div>
       <div className="mt-2 flex items-center justify-between gap-3">
         <CalendarLegend />
-        {pending && <Loader2 className="h-4 w-4 animate-spin text-gold" />}
       </div>
       {msg && <p className="mt-2 rounded-[5px] bg-cream px-3 py-2 text-sm text-maroon" role="status">{msg}</p>}
     </div>

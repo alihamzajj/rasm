@@ -1,24 +1,21 @@
+"use client";
 import Link from "next/link";
 import { Wallet, Hourglass, CalendarHeart, Inbox } from "lucide-react";
-import { getBusiness, getBusinessItems } from "@/lib/business";
-import { getUnavailableDates } from "@/lib/booking";
-import { getCommission } from "@/lib/queries";
+import { useBusiness } from "@/lib/demo/use-business";
+import { getBusinessItems } from "@/lib/demo/selectors";
+import { unavailableDates } from "@/lib/demo/engine";
 import { Stat } from "@/components/dashboard/stat";
 import { BusinessCalendar } from "@/components/dashboard/business-calendar";
 import { StatusBadge } from "@/components/ui/badge";
 import { formatPKR, prettyDate, toDateKey } from "@/lib/utils";
 
-export const metadata = { title: "Dashboard" };
-
-export default async function DashboardOverview() {
-  const biz = (await getBusiness())!;
-  const listing = biz.listings[0];
-  if (!listing) return <p>No listing yet.</p>;
-  const [items, days, commission] = await Promise.all([
-    getBusinessItems(biz.listings),
-    getUnavailableDates(listing.kind === "hall" ? { hallId: listing.id } : { vendorId: listing.id }),
-    getCommission(),
-  ]);
+export default function DashboardOverview() {
+  const { db, biz } = useBusiness();
+  const listing = biz?.listings[0];
+  if (!biz || !listing) return <p>No listing yet.</p>;
+  const items = getBusinessItems(db, biz.listings);
+  const days = unavailableDates(db, listing.kind === "hall" ? { hallId: listing.id } : { vendorId: listing.id });
+  const commission = db.commissionPercent;
   const today = toDateKey(new Date());
   const live = items.filter((i) => i.status !== "declined" && (i.booking.status === "confirmed" || i.booking.status === "completed"));
   const upcoming = live.filter((i) => i.booking.eventDate >= today);

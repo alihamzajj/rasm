@@ -1,8 +1,10 @@
+"use client";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useParams, useSearchParams } from "next/navigation";
 import { MapPin, Star, ChevronLeft } from "lucide-react";
-import { prisma } from "@/lib/db";
-import { getUnavailableDates } from "@/lib/booking";
+import { useDemo } from "@/lib/demo/store";
+import { packagesFor, reviewsFor } from "@/lib/demo/selectors";
+import { unavailableDates } from "@/lib/demo/engine";
 import { categoryByKey } from "@/lib/constants";
 import { Gallery } from "@/components/gallery";
 import { VendorAdder } from "@/components/vendor-adder";
@@ -10,24 +12,20 @@ import { Reviews } from "@/components/reviews";
 import { Badge } from "@/components/ui/badge";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { Reveal } from "@/components/motion/reveal";
-import { formatPKR, parseJSON } from "@/lib/utils";
+import { formatPKR } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-
-export async function generateMetadata({ params }: { params: { id: string } }) {
-  const v = await prisma.vendor.findUnique({ where: { id: params.id }, select: { businessName: true } });
-  return { title: v?.businessName ?? "Vendor" };
-}
-
-export default async function VendorDetail({ params, searchParams }: { params: { id: string }; searchParams: { date?: string } }) {
-  const v = await prisma.vendor.findUnique({ where: { id: params.id }, include: { packages: { orderBy: { price: "asc" } } } });
-  if (!v || v.approved !== "approved") notFound();
-  const [reviews, unavailable] = await Promise.all([
-    prisma.review.findMany({ where: { targetType: "vendor", targetId: v.id }, orderBy: { createdAt: "desc" } }),
-    getUnavailableDates({ vendorId: v.id }),
-  ]);
-  const photos = parseJSON<string[]>(v.photos, []);
+export default function VendorDetail() {
+  const { id } = useParams<{ id: string }>();
+  const sp = useSearchParams();
+  const db = useDemo((s) => s.db);
+  const vendor = db.vendors.find((x) => x.id === id);
+  if (!vendor || vendor.approved !== "approved") notFound();
+  const v = { ...vendor, packages: packagesFor(db, "vendor", vendor.id) };
+  const reviews = reviewsFor(db, "vendor", v.id);
+  const unavailable = unavailableDates(db, { vendorId: v.id });
+  const photos = v.photos;
   const cat = categoryByKey(v.category)!;
+  const searchParams = { date: sp.get("date") ?? undefined };
 
   return (
     <div className="container py-8 md:py-10">

@@ -1,13 +1,18 @@
+"use client";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
+import { useDemo } from "@/lib/demo/store";
+import { listBusiness } from "@/lib/demo/engine";
 import { CATEGORIES, CITIES, HALL_TYPES } from "@/lib/constants";
-import { listBusinessAction } from "@/app/actions";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "List your business" };
-
-export default function ListBusinessPage({ searchParams }: { searchParams: { sent?: string; kind?: string } }) {
+export default function ListBusinessPage() {
+  const router = useRouter();
+  const sp = useSearchParams();
+  const apply = useDemo((s) => s.apply);
+  const searchParams = { sent: sp.get("sent"), kind: sp.get("kind") };
   if (searchParams.sent) {
     return (
       <div className="container max-w-xl py-20 text-center">
@@ -38,7 +43,14 @@ export default function ListBusinessPage({ searchParams }: { searchParams: { sen
           <Link href="/list-your-business" className={`rounded-[5px] border p-3 text-center font-bold ${kind === "hall" ? "border-maroon bg-maroon text-ivory" : "border-line bg-white text-maroon"}`}>I own a marriage hall</Link>
           <Link href="/list-your-business?kind=vendor" className={`rounded-[5px] border p-3 text-center font-bold ${kind === "vendor" ? "border-maroon bg-maroon text-ivory" : "border-line bg-white text-maroon"}`}>I offer a wedding service</Link>
         </div>
-        <form action={listBusinessAction} className="grid gap-4 rounded-[6px] border border-line bg-white p-6 sm:grid-cols-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const f = Object.fromEntries(new FormData(e.currentTarget).entries()) as Record<string, string>;
+            apply((db) => listBusiness(db, f));
+            router.push("/list-your-business?sent=1");
+          }}
+          className="grid gap-4 rounded-[6px] border border-line bg-white p-6 sm:grid-cols-2">
           <input type="hidden" name="kind" value={kind} />
           <div className="sm:col-span-2"><label className="label" htmlFor="bn">Business name</label><input id="bn" name="businessName" required className="field" placeholder={kind === "hall" ? "e.g. Sheesh Mahal Banquets" : "e.g. Shutter Shaadi"} /></div>
           <div><label className="label" htmlFor="cn">Your name</label><input id="cn" name="contactName" required className="field" /></div>

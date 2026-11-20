@@ -1,13 +1,13 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, ShoppingBag, LayoutDashboard, Shield, CalendarHeart, LogOut } from "lucide-react";
 import { Logo } from "./logo";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "./ui/sheet";
 import { useCart } from "@/store/cart";
-import { logoutAction } from "@/app/actions";
+import { useDemo, useCurrentUser } from "@/lib/demo/store";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -15,18 +15,21 @@ const NAV = [
   { href: "/vendors", label: "Vendors" },
   { href: "/packages", label: "Packages" },
   { href: "/planner", label: "Planner" },
+  { href: "/features", label: "Features" },
 ];
-
-type U = { id: string; name: string; role: string } | null;
 
 const roleHome = (role: string) =>
   role === "admin" ? { href: "/admin", label: "Admin panel", icon: Shield } : role === "customer" ? { href: "/bookings", label: "My bookings", icon: CalendarHeart } : { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard };
 
 const roleLabel: Record<string, string> = { customer: "Customer", hall_owner: "Hall owner", vendor: "Vendor", admin: "Admin" };
 
-export function SiteHeader({ user }: { user: U }) {
+export function SiteHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const currentUser = useCurrentUser();
+  const setUser = useDemo((s) => s.setUser);
+  const user = mounted ? currentUser : null;
   const count = useCart((s) => (s.hall ? 1 : 0) + s.vendors.length);
   useEffect(() => setMounted(true), []);
 
@@ -36,13 +39,13 @@ export function SiteHeader({ user }: { user: U }) {
     <header className="sticky top-0 z-40 border-b border-line/80 bg-ivory/95 backdrop-blur supports-[backdrop-filter]:bg-ivory/85">
       <div className="container flex h-16 items-center justify-between gap-4 md:h-[72px]">
         <Logo />
-        <nav className="hidden items-center gap-7 lg:flex" aria-label="Main">
+        <nav className="hidden items-center gap-5 xl:gap-7 lg:flex" aria-label="Main">
           {NAV.map((n) => (
             <Link
               key={n.href}
               href={n.href}
               className={cn(
-                "relative text-sm font-semibold text-ink-muted transition-colors hover:text-maroon",
+                "relative whitespace-nowrap text-sm font-semibold text-ink-muted transition-colors hover:text-maroon",
                 pathname.startsWith(n.href) && "text-maroon after:absolute after:-bottom-1.5 after:left-0 after:h-px after:w-full after:bg-gold"
               )}
             >
@@ -62,11 +65,9 @@ export function SiteHeader({ user }: { user: U }) {
               <Link href="/login" className="rounded-[4px] border border-line bg-white px-2.5 py-1 text-xs text-ink-muted hover:border-gold" title="Switch demo role">
                 {user.name.split(" ")[0]} · <span className="font-bold text-gold-text">{roleLabel[user.role]}</span>
               </Link>
-              <form action={logoutAction}>
-                <button className="p-1 text-ink-muted hover:text-maroon" aria-label="Log out" title="Log out">
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </form>
+              <button onClick={() => { setUser(null); router.push("/"); }} className="p-1 text-ink-muted hover:text-maroon" aria-label="Log out" title="Log out">
+                <LogOut className="h-4 w-4" />
+              </button>
             </>
           ) : (
             <Link href="/login" className="text-sm font-semibold text-maroon hover:underline">

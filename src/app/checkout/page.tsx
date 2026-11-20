@@ -1,26 +1,31 @@
+"use client";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { getCustomerId } from "@/lib/session";
-import { releaseExpiredHolds } from "@/lib/booking";
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useDemo, useCustomerId } from "@/lib/demo/store";
 import { CheckoutClient } from "@/components/checkout-client";
 import { CancellationPolicy } from "@/components/cancellation-policy";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { Button } from "@/components/ui/button";
 
-export const dynamic = "force-dynamic";
-export const metadata = { title: "Checkout" };
+export default function CheckoutPage() {
+  const router = useRouter();
+  const b = useSearchParams().get("b");
+  const customerId = useCustomerId();
+  const db = useDemo((s) => s.db);
+  const booking = b ? db.bookings.find((x) => x.id === b && x.customerId === customerId) : undefined;
 
-export default async function CheckoutPage({ searchParams }: { searchParams: { b?: string } }) {
-  if (!searchParams.b) redirect("/packages");
-  await releaseExpiredHolds();
-  const customerId = await getCustomerId();
-  const booking = await prisma.booking.findFirst({ where: { id: searchParams.b, customerId }, include: { items: true } });
-  if (!booking) redirect("/packages");
-  if (booking.status === "confirmed") redirect(`/booking/${booking.id}`);
+  useEffect(() => {
+    if (!booking) router.replace("/packages");
+    else if (booking.status === "confirmed") router.replace(`/booking/${booking.id}`);
+  }, [booking, router]);
+  if (!booking) return null;
+  if (booking.status === "confirmed")
+    return <p className="container py-24 text-center font-display text-2xl text-maroon">Payment successful — opening your booking…</p>;
 
-  const holds = await prisma.availability.findMany({ where: { heldByBooking: booking.id, status: "held" } });
-  const heldUntil = holds.length === booking.items.length && holds.length > 0 ? new Date(Math.min(...holds.map((h) => h.heldUntil!.getTime()))).toISOString() : null;
+  const items = db.items.filter((i) => i.bookingId === booking.id);
+  const holds = db.availability.filter((a) => a.heldByBooking === booking.id && a.status === "held" && a.heldUntil);
+  const heldUntil = holds.length === items.length && holds.length > 0 ? new Date(Math.min(...holds.map((h) => new Date(h.heldUntil!).getTime()))).toISOString() : null;
 
   if (booking.status !== "pending") {
     return (
@@ -43,6 +48,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: { b
       </section>
       <div className="container py-10">
         <CheckoutClient
+          key={booking.id}
           booking={{
             id: booking.id,
             code: booking.code,
@@ -51,7 +57,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: { b
             guests: booking.guests,
             total: booking.totalAmount,
             advance: booking.advanceAmount,
-            items: booking.items.map((i) => ({ id: i.id, label: i.label, price: i.price, type: i.type })),
+            items: items.map((i) => ({ id: i.id, label: i.label, price: i.price, type: i.type })),
           }}
           heldUntil={heldUntil}
           policy={<CancellationPolicy compact />}
