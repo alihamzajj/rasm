@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Royal Heritage mapped onto shadcn tokens (HSL) */
+    --background: 37 65% 96%; /* ivory #FBF6EE */
+    --foreground: 343 25% 14%; /* #2B1A1F */
+    --card: 37 65% 98%;
+    --card-foreground: 343 25% 14%;
+    --popover: 37 65% 98%;
+    --popover-foreground: 343 25% 14%;
+    --primary: 344 56% 23%; /* maroon #5B1A2B */
+    --primary-foreground: 37 65% 96%;
+    --secondary: 37 49% 91%; /* cream */
+    --secondary-foreground: 344 56% 23%;
+    --muted: 37 49% 91%;
+    --muted-foreground: 343 11% 33%; /* #5C4A4F */
+    --accent: 38 59% 45%; /* gold */
+    --accent-foreground: 37 65% 96%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 37 65% 96%;
+    --border: 38 50% 81%; /* #E6D5B8 */
+    --input: 38 50% 81%;
+    --ring: 38 59% 45%;
+    --radius: 6px;
+  }
+  * { @apply border-border; }
+  html { scroll-behavior: smooth; }
+  body { @apply bg-ivory text-ink font-sans antialiased; }
+  h1, h2, h3, h4 { @apply font-display text-maroon; font-weight: 600; }
+}
+
+@layer components {
+  .eyebrow { @apply text-xs font-bold uppercase tracking-[0.2em] text-gold-text; }
+  .section { @apply py-16 md:py-24; }
+  .section-title { @apply text-center font-display text-3xl font-semibold text-maroon md:text-4xl; }
+  .section-sub { @apply mx-auto mt-3 max-w-2xl text-center text-ink-muted; }
+  .card-royal { @apply rounded-[6px] border border-line bg-white/70 shadow-[0_1px_0_rgba(91,26,43,0.04)]; }
+  .field { @apply h-11 w-full rounded-[5px] border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/25; }
+  .label { @apply mb-1.5 block text-xs font-bold uppercase tracking-wider text-ink-muted; }
+}
+
+/* react-day-picker theme */
+.rdp-root {
+  --rdp-accent-color: #5B1A2B;
+  --rdp-accent-background-color: #F3EADB;
+  --rdp-today-color: #8A6420;
+  --rdp-day-height: 40px;
+  --rdp-day-width: 40px;
+  --rdp-day_button-height: 38px;
+  --rdp-day_button-width: 38px;
+  --rdp-day_button-border-radius: 5px;
+  --rdp-selected-border: 2px solid #5B1A2B;
+  font-size: 0.9rem;
+}
+.rdp-root .rdp-caption_label { font-family: var(--font-playfair), serif; color: #5B1A2B; font-weight: 600; }
+.rdp-root .rdp-selected .rdp-day_button { background: #5B1A2B; color: #FBF6EE; }
+.rdp-root .rdp-disabled { opacity: 1; }
+.rdp-root .rdp-disabled .rdp-day_button { color: #b9a9ad; text-decoration: line-through; }
+.rdp-root .day-booked .rdp-day_button { background: #f1dede; color: #8b3a4c; text-decoration: line-through; }
+.rdp-root .day-held .rdp-day_button { background: #f7ebcf; color: #8A6420; }
+.rdp-root .day-blocked .rdp-day_button { background: #e9e3e4; color: #5C4A4F; text-decoration: line-through; }
+
+/* Turn off every animation and transition for reduced-motion users */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

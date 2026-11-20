@@ -1,0 +1,144 @@
+// Rasm data model. SQLite for the prototype.
+// To switch to PostgreSQL: set provider = "postgresql", point DATABASE_URL at Postgres,
+// and (optionally) turn the JSON-string columns (amenities, photos) into Json / String[].
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String
+  email     String    @unique
+  role      String // customer | hall_owner | vendor | admin
+  halls     Hall[]
+  vendors   Vendor[]
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+}
+
+model Hall {
+  id           String         @id @default(cuid())
+  ownerId      String
+  owner        User           @relation(fields: [ownerId], references: [id])
+  name         String
+  city         String
+  area         String
+  type         String // banquet | marquee | lawn
+  description  String         @default("")
+  capacityMin  Int
+  capacityMax  Int
+  pricePerHead Int
+  basePrice    Int
+  amenities    String         @default("[]") // JSON array of strings
+  photos       String         @default("[]") // JSON array of image URLs
+  rating       Float          @default(0)
+  approved     String         @default("pending") // pending | approved | rejected
+  packages     Package[]
+  availability Availability[]
+  createdAt    DateTime       @default(now())
+}
+
+model Vendor {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  category     String // photographer | videographer | decorator | fireworks | caterer | dj | makeup | mehndi
+  businessName String
+  city         String
+  description  String
+  photos       String         @default("[]")
+  rating       Float          @default(0)
+  approved     String         @default("pending")
+  packages     Package[]
+  availability Availability[]
+  createdAt    DateTime       @default(now())
+}
+
+model Package {
+  id          String  @id @default(cuid())
+  hallId      String?
+  hall        Hall?   @relation(fields: [hallId], references: [id], onDelete: Cascade)
+  vendorId    String?
+  vendor      Vendor? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  price       Int // for hall menu packages this is the price per head
+}
+
+model Availability {
+  id            String    @id @default(cuid())
+  hallId        String?
+  hall          Hall?     @relation(fields: [hallId], references: [id], onDelete: Cascade)
+  vendorId      String?
+  vendor        Vendor?   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  date          String // YYYY-MM-DD (event dates are calendar days, not instants)
+  status        String // free | held | booked | blocked
+  heldUntil     DateTime?
+  heldByBooking String? // booking that owns the hold / booking
+
+  @@unique([hallId, date])
+  @@unique([vendorId, date])
+  @@index([status, heldUntil])
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  code          String        @unique // human friendly booking ID, e.g. RSM-7KD2Q
+  customerId    String
+  customer      User          @relation(fields: [customerId], references: [id])
+  eventName     String
+  eventDate     String
+  guests        Int           @default(0)
+  status        String // pending | confirmed | completed | cancelled
+  totalAmount   Int
+  advanceAmount Int
+  items         BookingItem[]
+  payments      Payment[]
+  createdAt     DateTime      @default(now())
+}
+
+model BookingItem {
+  id        String  @id @default(cuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  type      String // hall | vendor
+  refId     String // hall id or vendor id
+  packageId String?
+  label     String // denormalised name for display
+  price     Int
+  status    String  @default("requested") // requested | accepted | declined
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount    Int
+  status    String // paid | failed | refunded
+  method    String // card | jazzcash | easypaisa (all mocked)
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  bookingId  String?
+  authorName String
+  targetType String // hall | vendor
+  targetId   String
+  rating     Int
+  comment    String
+  photos     String   @default("[]")
+  createdAt  DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
