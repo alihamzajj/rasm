@@ -1,5 +1,7 @@
 # Rasm — wedding booking marketplace (prototype)
 
+**Live demo:** https://rasm-wedding.vercel.app · **Feature tour:** https://rasm-wedding.vercel.app/features
+
 Book a marriage hall and add a photographer, videographer, decorator, fireworks, caterer, DJ,
 makeup artist and mehndi artist to **the same booking**, with one 25% advance.
 
