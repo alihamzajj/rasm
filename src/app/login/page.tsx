@@ -1,8 +1,10 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import { useRouter, useSearchParams } from "next/navigation";
 import { User, Building2, Camera, Shield } from "lucide-react";
 import { DEMO_USERS } from "@/lib/demo/users";
 import { useDemo } from "@/lib/demo/store";
+import { toast } from "@/store/toast";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { Logo } from "@/components/logo";
 
@@ -19,6 +21,7 @@ export default function LoginPage() {
   const next = useSearchParams().get("next");
   const currentId = useDemo((s) => s.userId);
   const setUser = useDemo((s) => s.setUser);
+  useTitle("Log in");
   return (
     <div className="container max-w-3xl py-14">
       <div className="flex justify-center"><Logo /></div>
@@ -31,7 +34,7 @@ export default function LoginPage() {
           const isCurrent = currentId === u.id;
           return (
             <div key={u.id}>
-              <button onClick={() => { setUser(u.id); window.scrollTo(0, 0); router.push(next || u.home); }} className={`group flex h-full w-full gap-4 rounded-[6px] border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-gold hover:shadow-lg ${isCurrent ? "border-maroon ring-2 ring-maroon/15" : "border-line"}`}>
+              <button onClick={() => { setUser(u.id); toast(`Logged in as ${u.name}`, u.label, "info"); window.scrollTo(0, 0); router.push(next || u.home); }} className={`group flex h-full w-full gap-4 rounded-[6px] border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-gold hover:shadow-lg ${isCurrent ? "border-maroon ring-2 ring-maroon/15" : "border-line"}`}>
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-gold bg-cream text-maroon ring-4 ring-gold/10">
                   <Icon className="h-5 w-5" />
                 </span>

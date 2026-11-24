@@ -1,6 +1,8 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import { useDemo, useCustomerId } from "@/lib/demo/store";
 import { Planner } from "@/components/planner";
+import { categoryByKey } from "@/lib/constants";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 
 export default function PlannerPage() {
@@ -20,6 +22,20 @@ export default function PlannerPage() {
         vendors: items.filter((i) => i.type === "vendor").map((i) => i.label.split(" · ")[0]),
       };
     });
+  useTitle("Wedding planner");
+  const spendMap = new Map<string, number>();
+  db.bookings
+    .filter((b) => b.customerId === customerId && (b.status === "confirmed" || b.status === "pending"))
+    .forEach((b) =>
+      db.items
+        .filter((i) => i.bookingId === b.id && i.status !== "declined")
+        .forEach((i) => {
+          const label = i.type === "hall" ? "Halls" : categoryByKey(db.vendors.find((v) => v.id === i.refId)?.category ?? "")?.plural ?? "Vendors";
+          spendMap.set(label, (spendMap.get(label) ?? 0) + i.price);
+        })
+    );
+  const spend = [...spendMap.entries()].map(([label, amount]) => ({ label, amount })).sort((a, b) => b.amount - a.amount);
+
   return (
     <div>
       <section className="border-b border-line bg-cream py-10 text-center">
@@ -31,7 +47,7 @@ export default function PlannerPage() {
         </div>
       </section>
       <div className="container py-10">
-        <Planner booked={booked} />
+        <Planner booked={booked} spend={spend} />
       </div>
     </div>
   );

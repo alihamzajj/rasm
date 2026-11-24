@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
@@ -13,6 +14,7 @@ export default function ListBusinessPage() {
   const sp = useSearchParams();
   const apply = useDemo((s) => s.apply);
   const searchParams = { sent: sp.get("sent"), kind: sp.get("kind") };
+  useTitle("List your business");
   if (searchParams.sent) {
     return (
       <div className="container max-w-xl py-20 text-center">

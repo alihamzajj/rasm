@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import {
   Search, Building2, Camera, PackagePlus, Timer, ShieldCheck, CalendarHeart, ListChecks,
@@ -63,6 +64,7 @@ const EXTRAS = [
 
 export default function FeaturesPage() {
   const setUser = useDemo((s) => s.setUser);
+  useTitle("All features");
   return (
     <div>
       <section className="bg-maroon py-14 text-center text-ivory md:py-20">

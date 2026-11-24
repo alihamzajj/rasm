@@ -5,6 +5,7 @@ import { PackagePlus, Check, AlertTriangle } from "lucide-react";
 import { AvailabilityCalendar, type DayStatus } from "./availability-calendar";
 import { Button } from "./ui/button";
 import { useCart } from "@/store/cart";
+import { toast } from "@/store/toast";
 import { formatPKR, prettyDate, cn } from "@/lib/utils";
 import { categoryByKey } from "@/lib/constants";
 
@@ -48,6 +49,7 @@ export function VendorAdder({
     if (!pkg || !date || dateBusy) return;
     cart.setEvent({ eventDate: date });
     cart.addVendor({ vendorId: vendor.id, category: vendor.category, businessName: vendor.businessName, city: vendor.city, photo: vendor.photo, packageId: pkg.id, packageName: pkg.name, price: pkg.price });
+    toast(`${vendor.businessName} added`, `${pkg.name} · ${prettyDate(date)}`);
     router.push("/packages");
   };
 

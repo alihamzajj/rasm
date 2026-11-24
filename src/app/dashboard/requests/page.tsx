@@ -1,9 +1,11 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import { Check, X, Phone } from "lucide-react";
 import { useBusiness } from "@/lib/demo/use-business";
 import { useDemo } from "@/lib/demo/store";
 import { getBusinessItems } from "@/lib/demo/selectors";
 import { respondToItem } from "@/lib/demo/engine";
+import { toast } from "@/store/toast";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPKR, prettyDate } from "@/lib/utils";
@@ -12,6 +14,7 @@ export default function RequestsPage() {
   const { db, biz } = useBusiness();
   const apply = useDemo((s) => s.apply);
   const userId = useDemo((s) => s.userId) ?? "";
+  useTitle("Booking requests");
   if (!biz) return null;
   const items = getBusinessItems(db, biz.listings);
   const open = items.filter((i) => i.status === "requested" && i.booking.status === "confirmed");
@@ -41,8 +44,8 @@ export default function RequestsPage() {
                 <span className="font-display text-xl text-maroon">{formatPKR(i.price)}</span>
               </div>
               <div className="mt-4 flex gap-2">
-                <Button className="flex-1" size="sm" onClick={() => apply((d) => respondToItem(d, userId, i.id, "accept"))}><Check /> Accept</Button>
-                <Button className="flex-1" size="sm" variant="outline" onClick={() => apply((d) => respondToItem(d, userId, i.id, "decline"))}><X /> Decline</Button>
+                <Button className="flex-1" size="sm" onClick={() => { apply((d) => respondToItem(d, userId, i.id, "accept")); toast("Booking accepted", `${i.booking.eventName} · ${i.booking.customer.name} has been notified`); }}><Check /> Accept</Button>
+                <Button className="flex-1" size="sm" variant="outline" onClick={() => { apply((d) => respondToItem(d, userId, i.id, "decline")); toast("Booking declined", `The date is free again and ${formatPKR(i.advance)} is refunded to the customer`, "warning"); }}><X /> Decline</Button>
               </div>
             </article>
           ))}

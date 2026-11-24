@@ -1,14 +1,17 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CalendarDays, Users } from "lucide-react";
 import { useDemo, useCurrentUser, useCustomerId } from "@/lib/demo/store";
 import { cancelBooking } from "@/lib/demo/engine";
+import { toast } from "@/store/toast";
 import { paidFor } from "@/lib/demo/selectors";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { Reveal } from "@/components/motion/reveal";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DaysToGo } from "@/components/booking-actions";
 import { formatPKR, prettyDate } from "@/lib/utils";
 
 const TABS = ["all", "pending", "confirmed", "completed", "cancelled"] as const;
@@ -25,6 +28,7 @@ export default function MyBookings() {
     .sort((a, b) => b.eventDate.localeCompare(a.eventDate))
     .map((b) => ({ ...b, items: db.items.filter((i) => i.bookingId === b.id) }));
 
+  useTitle("My bookings");
   return (
     <div>
       <section className="border-b border-line bg-cream py-10 text-center">
@@ -35,7 +39,7 @@ export default function MyBookings() {
         </div>
       </section>
       <div className="container max-w-4xl py-10">
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
+        <div className="scroll-x mb-6 flex gap-2 pb-1">
           {TABS.map((t) => (
             <Link key={t} href={t === "all" ? "/bookings" : `/bookings?status=${t}`} className={`shrink-0 rounded-[4px] border px-3 py-1.5 text-sm capitalize ${status === t ? "border-maroon bg-maroon text-ivory" : "border-line bg-white hover:border-gold"}`}>
               {t}
@@ -63,7 +67,10 @@ export default function MyBookings() {
                           {b.guests > 0 && <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {b.guests} guests</span>}
                         </p>
                       </div>
-                      <StatusBadge status={b.status} />
+                      <div className="flex flex-col items-end gap-2">
+                        <StatusBadge status={b.status} />
+                        {(b.status === "confirmed" || b.status === "pending") && <DaysToGo date={b.eventDate} />}
+                      </div>
                     </div>
                     <ul className="mt-4 space-y-1.5 border-t border-line pt-3 text-sm">
                       {b.items.map((it) => (
@@ -87,7 +94,7 @@ export default function MyBookings() {
                           <Button asChild size="sm" variant="outline"><Link href={`/booking/${b.id}`}>View</Link></Button>
                         )}
                         {(b.status === "pending" || b.status === "confirmed") && (
-                          <Button size="sm" variant="ghost" className="text-rose-700" onClick={() => apply((d) => cancelBooking(d, b.id, customerId))}>Cancel</Button>
+                          <Button size="sm" variant="ghost" className="text-rose-700" onClick={() => { apply((d) => cancelBooking(d, b.id, customerId)); toast(`${b.eventName} cancelled`, b.status === "confirmed" ? `${formatPKR(b.advanceAmount)} advance refunded` : undefined, "warning"); }}>Cancel</Button>
                         )}
                       </div>
                     </div>

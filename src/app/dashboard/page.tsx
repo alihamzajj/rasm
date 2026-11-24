@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import { Wallet, Hourglass, CalendarHeart, Inbox } from "lucide-react";
 import { useBusiness } from "@/lib/demo/use-business";
@@ -12,6 +13,7 @@ import { formatPKR, prettyDate, toDateKey } from "@/lib/utils";
 export default function DashboardOverview() {
   const { db, biz } = useBusiness();
   const listing = biz?.listings[0];
+  useTitle("Dashboard");
   if (!biz || !listing) return <p>No listing yet.</p>;
   const items = getBusinessItems(db, biz.listings);
   const days = unavailableDates(db, listing.kind === "hall" ? { hallId: listing.id } : { vendorId: listing.id });

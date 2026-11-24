@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import { notFound, useParams, useSearchParams } from "next/navigation";
 import { MapPin, Users, Star, Check, ChevronLeft } from "lucide-react";
@@ -6,6 +7,7 @@ import { useDemo } from "@/lib/demo/store";
 import { packagesFor, reviewsFor } from "@/lib/demo/selectors";
 import { unavailableDates } from "@/lib/demo/engine";
 import { Gallery } from "@/components/gallery";
+import { MobileBookBar } from "@/components/mobile-book-bar";
 import { HallBooker } from "@/components/hall-booker";
 import { Reviews } from "@/components/reviews";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +20,7 @@ export default function HallDetail() {
   const sp = useSearchParams();
   const db = useDemo((s) => s.db);
   const hall = db.halls.find((h) => h.id === id);
+  useTitle(db.halls.find((h) => h.id === id)?.name);
   if (!hall || hall.approved !== "approved") notFound();
   const packages = packagesFor(db, "hall", hall.id);
   const reviews = reviewsFor(db, "hall", hall.id);
@@ -90,7 +93,7 @@ export default function HallDetail() {
           </Reveal>
         </div>
 
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+        <aside id="book" className="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-[6px] border border-line bg-white p-5 shadow-[0_20px_40px_-25px_rgba(91,26,43,0.35)]">
             <h2 className="text-xl">Check availability</h2>
             <p className="mb-4 text-xs text-ink-muted">Booked and held dates are crossed out.</p>
@@ -103,6 +106,7 @@ export default function HallDetail() {
           </div>
         </aside>
       </div>
+      <MobileBookBar price={`from ${formatPKR(hall.pricePerHead)}/head`} note={`+ ${formatPKR(hall.basePrice)} hall fee · ${hall.capacityMin}–${hall.capacityMax} guests`} />
     </div>
   );
 }

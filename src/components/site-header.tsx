@@ -36,7 +36,7 @@ export function SiteHeader() {
   const home = user ? roleHome(user.role) : null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line/80 bg-ivory/95 backdrop-blur supports-[backdrop-filter]:bg-ivory/85">
+    <header className="sticky top-0 z-40 print:hidden border-b border-line/80 bg-ivory/95 backdrop-blur supports-[backdrop-filter]:bg-ivory/85">
       <div className="container flex h-16 items-center justify-between gap-4 md:h-[72px]">
         <Logo />
         <nav className="hidden items-center gap-5 xl:gap-7 lg:flex" aria-label="Main">

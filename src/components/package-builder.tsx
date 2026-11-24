@@ -9,6 +9,7 @@ import { Button } from "./ui/button";
 import { useCart, cartTotals } from "@/store/cart";
 import { CATEGORIES, categoryByKey } from "@/lib/constants";
 import { formatPKR, prettyDate, toDateKey } from "@/lib/utils";
+import { toast } from "@/store/toast";
 import { useDemo, useCustomerId } from "@/lib/demo/store";
 import { startCheckout, SlotConflictError } from "@/lib/demo/engine";
 
@@ -91,7 +92,7 @@ export function PackageBuilder({ policy }: { policy: ReactNode }) {
               subtitle={`${cart.hall.packageName} · ${formatPKR(cart.hall.perHead)}/head × ${cart.guests} + ${formatPKR(cart.hall.basePrice)} hall fee`}
               price={totals.hallLine}
               changeHref={`/halls/${cart.hall.hallId}`}
-              onRemove={() => cart.setHall(null)}
+              onRemove={() => { toast(`${cart.hall!.name} removed`, undefined, "info"); cart.setHall(null); }}
             />
           ) : (
             <Link href="/halls" className="flex items-center justify-center gap-2 rounded-[6px] border border-dashed border-gold bg-white p-6 text-sm font-bold text-maroon hover:bg-cream">
@@ -114,7 +115,7 @@ export function PackageBuilder({ policy }: { policy: ReactNode }) {
                     subtitle={v.packageName}
                     price={v.price}
                     changeHref={`/vendors/${categoryByKey(v.category)?.slug}`}
-                    onRemove={() => cart.removeVendor(v.vendorId)}
+                    onRemove={() => { toast(`${v.businessName} removed`, undefined, "info"); cart.removeVendor(v.vendorId); }}
                   />
                 </motion.div>
               ))}

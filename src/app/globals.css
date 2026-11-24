@@ -72,3 +72,7 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* horizontal chip rows: scroll without a visible scrollbar */
+.scroll-x { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.scroll-x::-webkit-scrollbar { display: none; }

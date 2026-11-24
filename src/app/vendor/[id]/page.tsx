@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import { notFound, useParams, useSearchParams } from "next/navigation";
 import { MapPin, Star, ChevronLeft } from "lucide-react";
@@ -7,6 +8,7 @@ import { packagesFor, reviewsFor } from "@/lib/demo/selectors";
 import { unavailableDates } from "@/lib/demo/engine";
 import { categoryByKey } from "@/lib/constants";
 import { Gallery } from "@/components/gallery";
+import { MobileBookBar } from "@/components/mobile-book-bar";
 import { VendorAdder } from "@/components/vendor-adder";
 import { Reviews } from "@/components/reviews";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +21,7 @@ export default function VendorDetail() {
   const sp = useSearchParams();
   const db = useDemo((s) => s.db);
   const vendor = db.vendors.find((x) => x.id === id);
+  useTitle(db.vendors.find((x) => x.id === id)?.businessName);
   if (!vendor || vendor.approved !== "approved") notFound();
   const v = { ...vendor, packages: packagesFor(db, "vendor", vendor.id) };
   const reviews = reviewsFor(db, "vendor", v.id);
@@ -64,7 +67,7 @@ export default function VendorDetail() {
             <div className="mt-4"><Reviews reviews={reviews} /></div>
           </Reveal>
         </div>
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+        <aside id="book" className="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-[6px] border border-line bg-white p-5 shadow-[0_20px_40px_-25px_rgba(91,26,43,0.35)]">
             <h2 className="text-xl">Add to your wedding</h2>
             <p className="mb-4 text-xs text-ink-muted">Booked and held dates are crossed out.</p>
@@ -77,6 +80,7 @@ export default function VendorDetail() {
           </div>
         </aside>
       </div>
+      <MobileBookBar price={`from ${formatPKR(v.packages[0]?.price ?? 0)}`} note={`${v.packages.length} packages · ${cat.label}`} cta="Add to package" />
     </div>
   );
 }

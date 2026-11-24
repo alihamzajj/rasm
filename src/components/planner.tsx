@@ -6,11 +6,12 @@ import { Plus, Trash2, CalendarDays, MapPin, CheckSquare, Square, X, Download, R
 import { usePlanner } from "@/store/planner";
 import { CATEGORIES, categoryByKey } from "@/lib/constants";
 import { Button } from "./ui/button";
+import { BudgetPanel, type Spend } from "./budget-panel";
 import { prettyDate, cn } from "@/lib/utils";
 
 type Booked = { code: string; eventName: string; eventDate: string; status: string; venue: string; vendors: string[] };
 
-export function Planner({ booked }: { booked: Booked[] }) {
+export function Planner({ booked, spend }: { booked: Booked[]; spend: Spend[] }) {
   const p = usePlanner();
   const [mounted, setMounted] = useState(false);
   const [active, setActive] = useState<string>("");
@@ -69,6 +70,7 @@ export function Planner({ booked }: { booked: Booked[] }) {
       <AnimatePresence mode="wait">
         {ev && (
           <motion.div key={ev.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+            <BudgetPanel spend={spend} />
             <div className="rounded-[6px] border border-line bg-white p-5">
               <div className="flex items-start justify-between gap-3">
                 <input value={ev.name} onChange={(e) => p.updateEvent(ev.id, { name: e.target.value })} className="w-full bg-transparent font-display text-3xl text-maroon outline-none focus:border-b focus:border-gold" aria-label="Event name" />

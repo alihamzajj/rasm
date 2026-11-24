@@ -1,8 +1,10 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Image from "next/image";
 import { Check, X, MapPin } from "lucide-react";
 import { useDemo } from "@/lib/demo/store";
 import { reviewListing } from "@/lib/demo/engine";
+import { toast } from "@/store/toast";
 import { categoryByKey } from "@/lib/constants";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,7 @@ export default function AdminApprovals() {
     ...vendors.map((v) => ({ kind: "vendor" as const, id: v.id, name: v.businessName, sub: `from ${formatPKR(Math.min(...v.packages.map((p) => p.price)))}`, city: v.city, contact: `${v.user.name} · ${v.user.email}`, photo: v.photos[0], description: v.description, tag: categoryByKey(v.category)?.label ?? v.category })),
   ];
 
+  useTitle("Admin · Approvals");
   return (
     <div className="space-y-10">
       <section>
@@ -39,8 +42,8 @@ export default function AdminApprovals() {
                 <p className="mt-1 line-clamp-2 text-xs text-ink-muted">{q.description}</p>
                 <p className="mt-1 text-xs text-ink-muted">Contact: {q.contact}</p>
                 <div className="mt-3 flex gap-2">
-                  <Button size="sm" onClick={() => apply((d) => reviewListing(d, q.kind, q.id, "approve"))}><Check /> Approve</Button>
-                  <Button size="sm" variant="outline" onClick={() => apply((d) => reviewListing(d, q.kind, q.id, "reject"))}><X /> Reject</Button>
+                  <Button size="sm" onClick={() => { apply((d) => reviewListing(d, q.kind, q.id, "approve")); toast(`${q.name} approved`, "It now appears in search results"); }}><Check /> Approve</Button>
+                  <Button size="sm" variant="outline" onClick={() => { apply((d) => reviewListing(d, q.kind, q.id, "reject")); toast(`${q.name} rejected`, undefined, "warning"); }}><X /> Reject</Button>
                 </div>
               </div>
             </article>

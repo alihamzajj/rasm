@@ -23,6 +23,8 @@ const safeStorage: StateStorage = {
 
 type State = {
   events: PlannerEvent[];
+  budget: number;
+  setBudget: (n: number) => void;
   addEvent: () => void;
   removeEvent: (id: string) => void;
   updateEvent: (id: string, p: Partial<Omit<PlannerEvent, "id">>) => void;
@@ -40,6 +42,8 @@ export const usePlanner = create<State>()(
   persist(
     (set) => ({
       events: DEFAULT_EVENTS,
+      budget: 9_000_000,
+      setBudget: (budget) => set({ budget }),
       addEvent: () => set((s) => ({ events: [...s.events, { id: uid(), name: "New event", date: "", venue: "", vendors: [], tasks: [] }] })),
       removeEvent: (id) => set((s) => ({ events: s.events.filter((e) => e.id !== id) })),
       updateEvent: (id, p) => set((s) => ({ events: mapEvent(s.events, id, (e) => ({ ...e, ...p })) })),
@@ -48,7 +52,7 @@ export const usePlanner = create<State>()(
       addTask: (eventId, text) => set((s) => ({ events: mapEvent(s.events, eventId, (e) => ({ ...e, tasks: [...e.tasks, { id: uid(), text, done: false }] })) })),
       toggleTask: (eventId, tid) => set((s) => ({ events: mapEvent(s.events, eventId, (e) => ({ ...e, tasks: e.tasks.map((t) => (t.id === tid ? { ...t, done: !t.done } : t)) })) })),
       removeTask: (eventId, tid) => set((s) => ({ events: mapEvent(s.events, eventId, (e) => ({ ...e, tasks: e.tasks.filter((t) => t.id !== tid) })) })),
-      reset: () => set({ events: DEFAULT_EVENTS }),
+      reset: () => set({ events: DEFAULT_EVENTS, budget: 9_000_000 }),
     }),
     { name: "rasm-planner", storage: createJSONStorage(() => safeStorage) }
   )

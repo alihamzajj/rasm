@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Search, PackagePlus, BadgeCheck } from "lucide-react";
@@ -16,7 +17,7 @@ import { HeroSearch } from "@/components/home/hero-search";
 import { PackageEstimator } from "@/components/home/package-estimator";
 import { Button } from "@/components/ui/button";
 
-const HERO_PHOTO = unsplash("photo-1587271407850-8d438ca9fdf2", 2000);
+const HERO_PHOTO = unsplash("photo-1605553426886-c0a99033fda0", 2000);
 
 const TILES = [
   { href: "/halls", label: "Halls", image: "photo-1519167758481-83f550bb49b3", note: "Banquets, marquees & lawns" },
@@ -37,6 +38,7 @@ export default function HomePage() {
   });
   const avg = (k: "pricePerHead" | "basePrice") => (all.length ? all.reduce((a, h) => a + h[k], 0) / all.length : 0);
 
+  useTitle(undefined);
   return (
     <>
       {/* ---------------- HERO ---------------- */}

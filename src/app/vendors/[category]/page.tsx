@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import { notFound, useParams, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, ChevronLeft } from "lucide-react";
@@ -8,6 +9,7 @@ import { approvedVendors } from "@/lib/demo/selectors";
 import { unavailableIdsOn } from "@/lib/demo/engine";
 import { VendorCard } from "@/components/vendor-card";
 import { Reveal } from "@/components/motion/reveal";
+import { FilterPanel } from "@/components/filter-panel";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { FireworksBanner } from "@/components/fireworks-banner";
 import { Button } from "@/components/ui/button";
@@ -18,6 +20,7 @@ export default function VendorCategoryPage() {
   const sp = useSearchParams();
   const db = useDemo((s) => s.db);
   const cat = categoryBySlug(params.category);
+  useTitle(categoryBySlug(params.category)?.plural);
   if (!cat) notFound();
   const get = (k: string) => sp.get(k) ?? "";
   const city = get("city"), date = get("date"), max = get("max"), rating = get("rating");
@@ -52,7 +55,7 @@ export default function VendorCategoryPage() {
       )}
 
       <div className="container py-6">
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="scroll-x flex gap-2 pb-2">
           <Link href="/vendors" className="flex shrink-0 items-center gap-1 rounded-[4px] border border-line bg-white px-3 py-1.5 text-sm text-ink-muted hover:border-gold"><ChevronLeft className="h-3.5 w-3.5" /> All</Link>
           {CATEGORIES.map((c) => (
             <Link key={c.key} href={`/vendors/${c.slug}`} className={`shrink-0 rounded-[4px] border px-3 py-1.5 text-sm ${c.key === cat.key ? "border-maroon bg-maroon text-ivory" : "border-line bg-white text-ink hover:border-gold"}`}>
@@ -63,9 +66,9 @@ export default function VendorCategoryPage() {
       </div>
 
       <div className="container grid gap-8 pb-16 lg:grid-cols-[260px_1fr]">
-        <aside>
-          <form key={sp.toString()} method="get" className="sticky top-24 space-y-4 rounded-[6px] border border-line bg-white p-5">
-            <p className="flex items-center gap-2 font-display text-lg text-maroon"><SlidersHorizontal className="h-4 w-4 text-gold" /> Filters</p>
+        <FilterPanel active={[city, date, max, rating].filter(Boolean).length}>
+          <form key={sp.toString()} method="get" className="space-y-4 lg:sticky lg:top-24 rounded-[6px] border border-line bg-white p-5">
+            <p className="hidden items-center gap-2 font-display text-lg text-maroon lg:flex"><SlidersHorizontal className="h-4 w-4 text-gold" /> Filters</p>
             <div>
               <label className="label" htmlFor="city">City</label>
               <select id="city" name="city" defaultValue={city} className="field">
@@ -101,7 +104,7 @@ export default function VendorCategoryPage() {
             <Button className="w-full">Apply</Button>
             <Link href={`/vendors/${cat.slug}`} className="block text-center text-xs font-bold text-ink-muted hover:text-maroon">Clear all</Link>
           </form>
-        </aside>
+        </FilterPanel>
         <div>
           <p className="mb-5 text-sm text-ink-muted">
             <b className="text-maroon">{visible.length}</b> {cat.plural.toLowerCase()}

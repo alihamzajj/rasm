@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Image from "next/image";
 import { useState, type FormEvent } from "react";
 import { CheckCircle2, Trash2 } from "lucide-react";
@@ -8,6 +9,7 @@ import { packagesFor } from "@/lib/demo/selectors";
 import { updateHall, updateVendor, savePackage, deletePackage } from "@/lib/demo/engine";
 import { CITIES, HALL_TYPES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/store/toast";
 
 const formData = (e: FormEvent<HTMLFormElement>) => Object.fromEntries(new FormData(e.currentTarget).entries()) as Record<string, string>;
 
@@ -17,6 +19,7 @@ export default function ListingPage() {
   const userId = useDemo((s) => s.userId) ?? "";
   const [saved, setSaved] = useState(false);
   const l = biz?.listings[0];
+  useTitle("My listing");
   if (!l) return <p>No listing yet.</p>;
   const hall = l.kind === "hall" ? db.halls.find((h) => h.id === l.id) : undefined;
   const vendor = l.kind === "vendor" ? db.vendors.find((v) => v.id === l.id) : undefined;
@@ -41,6 +44,7 @@ export default function ListingPage() {
       apply((d) => updateVendor(d, userId, vendor.id, { businessName: f.name, city: f.city, description: f.description, ...(newPhotos.length ? { photos: newPhotos } : {}) }));
     }
     setSaved(true);
+    toast("Listing saved", "Customers see the changes straight away");
     setTimeout(() => setSaved(false), 2500);
   };
 
@@ -102,6 +106,7 @@ export default function ListingPage() {
                 e.preventDefault();
                 const f = formData(e);
                 apply((d) => savePackage(d, userId, l.kind, l.id, { id: p.id, name: f.name, description: f.description, price: Number(f.price) }));
+                toast(`${f.name} updated`);
               }}
               className="space-y-2"
             >
@@ -112,7 +117,7 @@ export default function ListingPage() {
               <textarea name="description" className="field h-auto min-h-[64px] py-2 text-sm" defaultValue={p.description} aria-label="Description" />
               <Button size="sm" variant="outline">Update</Button>
             </form>
-            <button onClick={() => apply((d) => deletePackage(d, userId, p.id))} className="mt-2 flex items-center gap-1 text-xs font-bold text-rose-700 hover:underline">
+            <button onClick={() => { apply((d) => deletePackage(d, userId, p.id)); toast(`${p.name} deleted`, undefined, "info"); }} className="mt-2 flex items-center gap-1 text-xs font-bold text-rose-700 hover:underline">
               <Trash2 className="h-3 w-3" /> Delete
             </button>
           </div>
@@ -122,6 +127,7 @@ export default function ListingPage() {
             e.preventDefault();
             const f = formData(e);
             apply((d) => savePackage(d, userId, l.kind, l.id, { name: f.name, description: f.description, price: Number(f.price) }));
+            toast(`${f.name} added`);
             e.currentTarget.reset();
           }}
           className="space-y-2 rounded-[6px] border border-dashed border-gold bg-cream p-4"

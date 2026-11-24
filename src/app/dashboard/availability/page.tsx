@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import { useBusiness } from "@/lib/demo/use-business";
 import { unavailableDates } from "@/lib/demo/engine";
 import { BusinessCalendar } from "@/components/dashboard/business-calendar";
@@ -6,6 +7,7 @@ import { BusinessCalendar } from "@/components/dashboard/business-calendar";
 export default function AvailabilityPage() {
   const { db, biz } = useBusiness();
   const listing = biz?.listings[0];
+  useTitle("Availability");
   if (!listing) return <p>No listing yet.</p>;
   const days = unavailableDates(db, listing.kind === "hall" ? { hallId: listing.id } : { vendorId: listing.id });
   return (

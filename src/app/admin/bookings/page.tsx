@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useDemo } from "@/lib/demo/store";
@@ -23,6 +24,7 @@ export default function AdminBookings() {
     .sort((a, b) => b.eventDate.localeCompare(a.eventDate));
   const total = bookings.reduce((a, b) => a + b.totalAmount, 0);
 
+  useTitle("Admin · All bookings");
   return (
     <div>
       <form key={sp.toString()} method="get" className="grid gap-3 rounded-[6px] border border-line bg-white p-4 sm:grid-cols-3 lg:grid-cols-6">

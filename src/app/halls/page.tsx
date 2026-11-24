@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
@@ -8,6 +9,7 @@ import { approvedHalls, hallCard } from "@/lib/demo/selectors";
 import { unavailableIdsOn } from "@/lib/demo/engine";
 import { HallCard } from "@/components/hall-card";
 import { Reveal } from "@/components/motion/reveal";
+import { FilterPanel } from "@/components/filter-panel";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { Button } from "@/components/ui/button";
 import { prettyDate, toDateKey } from "@/lib/utils";
@@ -29,6 +31,7 @@ export default function HallsPage() {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
 
+  useTitle(city ? `Wedding halls in ${city}` : "Wedding halls");
   return (
     <div>
       <section className="border-b border-line bg-cream py-10 md:py-14">
@@ -42,9 +45,9 @@ export default function HallsPage() {
 
       <div className="container grid gap-8 py-10 lg:grid-cols-[280px_1fr]">
         {/* filters */}
-        <aside>
-          <form key={sp.toString()} className="sticky top-24 space-y-4 rounded-[6px] border border-line bg-white p-5" method="get">
-            <p className="flex items-center gap-2 font-display text-lg text-maroon">
+        <FilterPanel active={[city, date, guests, type, min, max].filter(Boolean).length}>
+          <form key={sp.toString()} className="space-y-4 lg:sticky lg:top-24 rounded-[6px] border border-line bg-white p-5" method="get">
+            <p className="hidden items-center gap-2 font-display text-lg text-maroon lg:flex">
               <SlidersHorizontal className="h-4 w-4 text-gold" /> Filters
             </p>
             <div>
@@ -88,7 +91,7 @@ export default function HallsPage() {
             <Button className="w-full">Apply filters</Button>
             <Link href="/halls" className="block text-center text-xs font-bold text-ink-muted hover:text-maroon">Clear all</Link>
           </form>
-        </aside>
+        </FilterPanel>
 
         {/* results */}
         <div>

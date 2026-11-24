@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 export function TabNav({ items }: { items: { href: string; label: string }[] }) {
   const path = usePathname();
   return (
-    <nav className="-mb-px flex gap-1 overflow-x-auto" aria-label="Dashboard">
+    <nav className="scroll-x -mb-px flex gap-1" aria-label="Dashboard">
       {items.map((t) => {
         const active = t.href === items[0].href ? path === t.href : path.startsWith(t.href);
         return (

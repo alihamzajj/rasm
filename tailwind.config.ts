@@ -30,6 +30,7 @@ const config: Config = {
       fontFamily: {
         display: ["var(--font-playfair)", "Georgia", "serif"],
         sans: ["var(--font-mulish)", "system-ui", "sans-serif"],
+        urdu: ["var(--font-urdu)", "Noto Nastaliq Urdu", "serif"],
       },
       borderRadius: { lg: "6px", md: "5px", sm: "4px" },
       keyframes: {

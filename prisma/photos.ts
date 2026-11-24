@@ -3,7 +3,7 @@
 // "wedding photographer", "wedding fireworks", "mehndi" and similar.
 export const PHOTO_POOLS: Record<string, string[]> = {
   banquet: [
-    "photo-1523438885200-e635ba2c371e", "photo-1502635385003-ee1e6a1a742d", "photo-1587271407850-8d438ca9fdf2",
+    "photo-1523438885200-e635ba2c371e", "photo-1502635385003-ee1e6a1a742d", "photo-1640355105827-2aa98e908a7b",
     "photo-1542665952-14513db15293", "photo-1601482441062-b9f13131f33a", "photo-1568530873454-e4103a0b3c71",
     "photo-1524824267900-2fa9cbf7a506", "photo-1630638846398-345dd98c1c83", "photo-1519167758481-83f550bb49b3",
     "photo-1666617710768-425d2d9088f8", "photo-1712314947761-a8d718bd8c32", "photo-1632316962873-47ee3d309f02",

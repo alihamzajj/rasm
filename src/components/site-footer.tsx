@@ -4,7 +4,7 @@ import { CATEGORIES, CITIES } from "@/lib/constants";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto bg-maroon-dark text-ivory/80">
+    <footer className="mt-auto print:hidden bg-maroon-dark text-ivory/80">
       <div className="container grid gap-10 py-14 md:grid-cols-4">
         <div className="md:col-span-1">
           <Logo light />

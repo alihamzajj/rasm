@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -19,6 +20,7 @@ export default function CheckoutPage() {
     if (!booking) router.replace("/packages");
     else if (booking.status === "confirmed") router.replace(`/booking/${booking.id}`);
   }, [booking, router]);
+  useTitle("Checkout");
   if (!booking) return null;
   if (booking.status === "confirmed")
     return <p className="container py-24 text-center font-display text-2xl text-maroon">Payment successful — opening your booking…</p>;

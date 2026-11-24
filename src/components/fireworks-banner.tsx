@@ -7,7 +7,7 @@ import { Fireworks } from "./motion/fireworks";
 export function FireworksBanner({ children }: { children: ReactNode }) {
   const [key, setKey] = useState(0);
   return (
-    <section className="relative isolate overflow-hidden bg-maroon-dark py-14 md:py-20">
+    <section className="relative isolate overflow-hidden bg-maroon-dark py-14 md:py-20 print:hidden">
       <Fireworks burstKey={key} duration={6000} />
       <div className="container relative z-10 text-center">
         {children}

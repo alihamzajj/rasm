@@ -10,7 +10,10 @@ export function Logo({ light = false, className }: { light?: boolean; className?
         <path d="M20 13 C23.5 16.5 24 20 20 26 C16 20 16.5 16.5 20 13Z" fill={light ? "#3A0F1B" : "#E9C77B"} />
         <path d="M9 30 Q20 35 31 30" stroke="#B8862F" strokeWidth="1.2" fill="none" />
       </svg>
-      <span className={cn("font-display text-2xl font-semibold tracking-wide", light ? "text-ivory" : "text-maroon")}>Rasm</span>
+      <span className="flex items-baseline gap-2">
+        <span className={cn("font-display text-2xl font-semibold tracking-wide", light ? "text-ivory" : "text-maroon")}>Rasm</span>
+        <span lang="ur" className={cn("font-urdu text-base leading-none", light ? "text-gold-soft" : "text-gold")}>رسم</span>
+      </span>
     </Link>
   );
 }

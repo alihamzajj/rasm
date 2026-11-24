@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Image from "next/image";
 import Link from "next/link";
 import { useDemo } from "@/lib/demo/store";
@@ -9,6 +10,7 @@ import { Reveal } from "@/components/motion/reveal";
 export default function VendorsIndex() {
   const vendors = useDemo((s) => s.db.vendors);
   const countOf = (k: string) => vendors.filter((v) => v.category === k && v.approved === "approved").length;
+  useTitle("Wedding vendors");
   return (
     <section className="section">
       <div className="container">

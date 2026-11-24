@@ -5,6 +5,7 @@ import { CalendarCheck, Users } from "lucide-react";
 import { AvailabilityCalendar, type DayStatus } from "./availability-calendar";
 import { Button } from "./ui/button";
 import { useCart } from "@/store/cart";
+import { toast } from "@/store/toast";
 import { formatPKR, prettyDate, cn } from "@/lib/utils";
 
 type Pkg = { id: string; name: string; description: string; price: number };
@@ -43,6 +44,7 @@ export function HallBooker({
     if (!date || !pkg) return;
     cart.setEvent({ eventDate: date, guests, city: hall.city });
     cart.setHall({ hallId: hall.id, name: hall.name, city: hall.city, photo: hall.photo, basePrice: hall.basePrice, packageId: pkg.id, packageName: pkg.name, perHead: pkg.price });
+    toast(`${hall.name} added to your package`, `${prettyDate(date)} · ${guests} guests · ${pkg.name}`);
     router.push("/packages");
   };
 

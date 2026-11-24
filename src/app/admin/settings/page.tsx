@@ -1,7 +1,9 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import { Percent, Landmark, Wallet, TrendingUp } from "lucide-react";
 import { useDemo } from "@/lib/demo/store";
 import { setCommission } from "@/lib/demo/engine";
+import { toast } from "@/store/toast";
 import { Stat } from "@/components/dashboard/stat";
 import { Button } from "@/components/ui/button";
 import { formatPKR } from "@/lib/utils";
@@ -30,6 +32,7 @@ export default function AdminSettings() {
   });
   const max = Math.max(1, ...months.map((m) => m.gmv));
 
+  useTitle("Admin · Revenue");
   return (
     <div className="space-y-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -65,6 +68,7 @@ export default function AdminSettings() {
             e.preventDefault();
             const v = Number(new FormData(e.currentTarget).get("commission"));
             apply((d) => setCommission(d, v));
+            toast(`Commission set to ${v}%`, "Partner earnings and revenue are updated");
           }}
           className="h-fit rounded-[6px] border border-gold/50 bg-cream p-5">
           <h2 className="text-xl">Commission setting</h2>

@@ -1,4 +1,5 @@
 "use client";
+import { useTitle } from "@/lib/use-title";
 import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
@@ -8,12 +9,15 @@ import { FireworksBanner } from "@/components/fireworks-banner";
 import { OrnamentDivider } from "@/components/motion/ornament-divider";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BookingActions, DaysToGo } from "@/components/booking-actions";
+import { Logo } from "@/components/logo";
 import { formatPKR, prettyDate } from "@/lib/utils";
 
 export default function BookingConfirmed() {
   const { id } = useParams<{ id: string }>();
   const db = useDemo((s) => s.db);
   const booking = db.bookings.find((x) => x.id === id);
+  useTitle("Booking confirmed");
   if (!booking) notFound();
   const b = { ...booking, items: db.items.filter((i) => i.bookingId === booking.id) };
   const paid = paidFor(db, b.id);
@@ -34,11 +38,16 @@ export default function BookingConfirmed() {
     <div>
       {confirmed ? <FireworksBanner>{head}</FireworksBanner> : <section className="bg-maroon-dark py-16 text-center"><div className="container">{head}</div></section>}
       <div className="container max-w-3xl py-12">
-        <div className="rounded-[6px] border border-line bg-white p-6">
+        <div className="rounded-[6px] border border-line bg-white p-6 print:border-0 print:p-0">
+          <div className="mb-6 hidden items-center justify-between border-b border-line pb-4 print:flex">
+            <Logo />
+            <div className="text-right text-sm"><p className="font-bold text-maroon">Booking receipt</p><p>{b.code}</p></div>
+          </div>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-2xl">{b.eventName}</h2>
               <p className="text-ink-muted">{prettyDate(b.eventDate, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}{b.guests ? ` · ${b.guests} guests` : ""}</p>
+              {b.status !== "cancelled" && <DaysToGo date={b.eventDate} className="mt-2" />}
             </div>
             <StatusBadge status={b.status} />
           </div>
@@ -61,11 +70,22 @@ export default function BookingConfirmed() {
             <div className="flex justify-between text-emerald-700"><span>Advance paid</span><span className="font-bold">{formatPKR(paid)}</span></div>
             <div className="flex justify-between text-ink-muted"><span>Balance due to vendors</span><span>{formatPKR(b.totalAmount - paid)}</span></div>
           </div>
-          <p className="mt-6 rounded-[5px] bg-cream p-3 text-sm text-ink-muted">
+          <p className="mt-6 rounded-[5px] bg-cream p-3 text-sm text-ink-muted print:hidden">
             Each hall and vendor will now confirm your request from their dashboard. Your dates are locked and no one else can book them.
           </p>
+          {confirmed && (
+            <BookingActions
+              code={b.code}
+              eventName={b.eventName}
+              eventDate={b.eventDate}
+              venue={b.items.find((i) => i.type === "hall")?.label.split(" · ")[0] ?? ""}
+              vendors={b.items.filter((i) => i.type === "vendor").map((i) => i.label.split(" · ")[0])}
+              total={b.totalAmount}
+              paid={paid}
+            />
+          )}
         </div>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <div className="mt-8 flex flex-wrap justify-center gap-3 print:hidden">
           <Button asChild><Link href="/bookings">Go to my bookings</Link></Button>
           <Button asChild variant="outline"><Link href="/planner">Open the wedding planner</Link></Button>
         </div>
